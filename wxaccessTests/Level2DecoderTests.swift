@@ -15,14 +15,23 @@ struct Level2DecoderTests {
     func parseVolumeHeader() throws {
         guard let url = Bundle(for: Level2DecoderTestClass.self)
                 .url(forResource: "KEWX_sample", withExtension: "bin") else {
-            // Skip if no sample file bundled – CI will provide one
-            return
+            return  // skip if sample not bundled
         }
         let data = try Data(contentsOf: url)
         let decoder = Level2Decoder()
         let sweeps = try decoder.decode(data: data)
         #expect(!sweeps.isEmpty)
-        #expect(sweeps.first?.radials.isEmpty == false)
+        let first = try #require(sweeps.first)
+        #expect(first.radials.isEmpty == false)
+        // Scan date must be in 2026, not ~1956 (pre-fix bug produced wrong year)
+        let year = Calendar(identifier: .gregorian)
+            .component(.year, from: first.scanTime)
+        #expect(year == 2026)
+        // Azimuth and elevation angles must be physically plausible
+        let radial = try #require(first.radials.first)
+        #expect(radial.azimuth >= 0 && radial.azimuth < 360)
+        #expect(radial.elevation > 0 && radial.elevation < 20)
+        #expect(radial.numGates > 0)
     }
 
     @Test("BZip2 round-trip")

@@ -55,11 +55,13 @@ final class Level2Decoder {
             let controlWord = data.readInt32BE(at: offset)
             offset += 4
 
+            guard controlWord != 0 else { break }  // 0 = end-of-file marker
             let blockSize = Int(abs(controlWord))
             guard offset + blockSize <= data.count else { break }
 
+            // Positive control word = bzip2 compressed; negative = uncompressed.
             let blockData: Data
-            if controlWord < 0 {
+            if controlWord > 0 {
                 let compressed = data[offset ..< offset + blockSize]
                 guard let decompressed = try? bzip2Decompress(compressed) else {
                     offset += blockSize
@@ -119,12 +121,10 @@ final class Level2Decoder {
         let icao  = String(bytes: data[20..<24], encoding: .ascii)?
             .trimmingCharacters(in: .whitespaces) ?? "UNKN"
 
-        // Modified Julian Date: days since 1/1/1970 in NEXRAD convention is
-        // days since 1/1/1901. Offset from Unix epoch = 25567 days.
-        let unixDays  = Int(mjd) - 1          // NEXRAD MJD is 1-based
-        let epochDays = unixDays - 25567      // days since 1/1/1970
-        let seconds   = Double(epochDays) * 86400.0 + Double(msec) / 1000.0
-        let date      = Date(timeIntervalSince1970: seconds)
+        // NEXRAD MJD = days since Jan 1 1970, 1-based (day 1 = Jan 1 1970).
+        let unixDays = Int(mjd) - 1           // convert 1-based to 0-based
+        let seconds  = Double(unixDays) * 86400.0 + Double(msec) / 1000.0
+        let date     = Date(timeIntervalSince1970: seconds)
 
         return VolumeHeader(icao: icao, date: date)
     }
@@ -137,27 +137,28 @@ final class Level2Decoder {
         var time: Date? = nil
         var offset = 0
 
-        // Each message occupies one or more 2432-byte slots.
-        while offset + Offsets.messageSlotSize <= data.count {
-            let slotData = data[data.startIndex + offset ..< data.startIndex + offset + Offsets.messageSlotSize]
+        // Each message is preceded by a 12-byte CTM (Communications and Terminal
+        // Manager) header, which is zero-filled in archive files.  The 16-byte
+        // message header follows; its first two bytes give the message size in
+        // halfwords INCLUDING the header.  Advance by ctmSize + sizeHW*2 per message.
+        while offset + Offsets.ctmSize + Offsets.msgHeaderSize <= data.count {
+            offset += Offsets.ctmSize  // skip CTM
 
-            // Skip the 4-byte LDM size word that appears in the first slot of each compressed block.
-            // It mirrors the outer control word and is safe to ignore during message parsing.
-            let msgStart = slotData.startIndex
-            let msgType  = slotData[msgStart + Offsets.msgHeaderType]
+            let base    = data.startIndex + offset
+            let sizeHW  = data.readUInt16BE(at: base)
+            let msgType = data[base + Offsets.msgHeaderType]
+            let totalBytes = Int(sizeHW) * 2
 
-            switch msgType {
-            case 31:
-                if let (radial, t, v) = parseMessage31(data: data, slotOffset: offset) {
+            if msgType == 31, totalBytes >= Offsets.msgHeaderSize {
+                if let (radial, t, v) = parseMessage31(data: data, msgBase: offset) {
                     radials.append(radial)
                     if t != nil { time = t }
                     if v != 0 { vcp = v }
                 }
-            default:
-                break  // Messages 1, 2, 5 etc. – skip for now
             }
 
-            offset += Offsets.messageSlotSize
+            guard totalBytes >= Offsets.msgHeaderSize else { break }
+            offset += totalBytes
         }
 
         return (radials, vcp, time)
@@ -187,11 +188,10 @@ final class Level2Decoder {
         static let headerSize    = 32  // bytes before block pointers
     }
 
-    private func parseMessage31(data: Data, slotOffset: Int) -> (Radial, Date?, Int)? {
-        // The 16-byte message header sits at the start of the 2432-byte slot.
-        // Message 31 body begins immediately after.
-        let msgHeaderSize = 16
-        let bodyBase = data.startIndex + slotOffset + msgHeaderSize
+    private func parseMessage31(data: Data, msgBase: Int) -> (Radial, Date?, Int)? {
+        // msgBase is the byte offset of the 16-byte message header within `data`.
+        // Message 31 body begins immediately after the header.
+        let bodyBase = data.startIndex + msgBase + Offsets.msgHeaderSize
 
         guard bodyBase + M31.blockPtrs + 4 <= data.endIndex else { return nil }
 
@@ -252,12 +252,10 @@ final class Level2Decoder {
             )
         }
 
-        // Extract time and VCP from the volume data block if present (block type 'V')
-        // For simplicity, time comes from the M31 header fields
-        let ms   = data.readUInt32BE(at: bodyBase + M31.collectionMs)
-        let mjd  = Int(data.readUInt16BE(at: bodyBase + M31.julianDate))
-        let epochDays = mjd - 1 - 25567
-        let t = Date(timeIntervalSince1970: Double(epochDays) * 86400.0 + Double(ms) / 1000.0)
+        // Time from M31 radial header; NEXRAD MJD is 1-based days since Jan 1 1970.
+        let ms  = data.readUInt32BE(at: bodyBase + M31.collectionMs)
+        let mjd = Int(data.readUInt16BE(at: bodyBase + M31.julianDate))
+        let t   = Date(timeIntervalSince1970: Double(mjd - 1) * 86400.0 + Double(ms) / 1000.0)
 
         guard let radial = refRadial else { return nil }
         return (radial, t, 0)
@@ -267,8 +265,9 @@ final class Level2Decoder {
 
     private enum Offsets {
         static let volumeHeaderSize = 24
-        static let messageSlotSize  = 2432
-        static let msgHeaderType    = 3   // byte offset within message header
+        static let ctmSize          = 12  // CTM header preceding each message (zero in archives)
+        static let msgHeaderSize    = 16
+        static let msgHeaderType    = 3   // byte offset of message type within the 16-byte header
     }
 }
 

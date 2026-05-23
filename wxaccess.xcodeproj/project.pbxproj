@@ -20,6 +20,7 @@
 		4476CF6E524438296B989325 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F5A64AD639D80A2CDD40E13E /* ContentView.swift */; };
 		474A2A14F2F5BEFB7D6C16D8 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3573837C3F2C2814E5D996A6 /* SettingsView.swift */; };
 		4E9E5665C4E97CE3C10C4423 /* NWSAlert.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB8CBCB7157CC4A4ED061BDA /* NWSAlert.swift */; };
+		511BAB82B4D1368118DAD760 /* KEWX_sample.bin in Resources */ = {isa = PBXBuildFile; fileRef = C3848FBF33446F273D1047B3 /* KEWX_sample.bin */; };
 		59F480A0AF5A5FEE5D423C3D /* RadarOverlayRenderer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2D5CDC42FCCBBA6A0D42BD5F /* RadarOverlayRenderer.swift */; };
 		6F516CADA92787F27FB09F24 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 26E840973061D86145DD5F26 /* Assets.xcassets */; };
 		75F2DAE56D5C9F957026DBC5 /* NEXRADSiteCatalog.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D5F0D56471C314E99C70706 /* NEXRADSiteCatalog.swift */; };
@@ -70,6 +71,7 @@
 		B915F3EAA36E55DC60390310 /* RadarSweep.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RadarSweep.swift; sourceTree = "<group>"; };
 		BA62D152A9D9F579E8DC616F /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		C24BB8840C928CFD79CDF18A /* Metal.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Metal.framework; path = System/Library/Frameworks/Metal.framework; sourceTree = SDKROOT; };
+		C3848FBF33446F273D1047B3 /* KEWX_sample.bin */ = {isa = PBXFileReference; lastKnownFileType = archive.macbinary; path = KEWX_sample.bin; sourceTree = "<group>"; };
 		C60CBAB7FF9FF69F7D434E92 /* Accelerate.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Accelerate.framework; path = System/Library/Frameworks/Accelerate.framework; sourceTree = SDKROOT; };
 		DF6CD7BFC88BD0959AD663C3 /* AlertsListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AlertsListView.swift; sourceTree = "<group>"; };
 		F4B2427136256697F4C94293 /* NEXRADSite.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NEXRADSite.swift; sourceTree = "<group>"; };
@@ -134,6 +136,7 @@
 			isa = PBXGroup;
 			children = (
 				BA62D152A9D9F579E8DC616F /* Info.plist */,
+				C3848FBF33446F273D1047B3 /* KEWX_sample.bin */,
 				0F9B6B85C7A2F50571A67880 /* Level2DecoderTests.swift */,
 			);
 			path = wxaccessTests;
@@ -201,6 +204,7 @@
 			buildConfigurationList = 4F5D98DFB2504FC1DF43774B /* Build configuration list for PBXNativeTarget "wxaccessTests" */;
 			buildPhases = (
 				DA5D555C67A240E36FC05910 /* Sources */,
+				F12FE81BAFB076FDFB2F1549 /* Resources */,
 			);
 			buildRules = (
 			);
@@ -278,6 +282,14 @@
 			buildActionMask = 2147483647;
 			files = (
 				6F516CADA92787F27FB09F24 /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		F12FE81BAFB076FDFB2F1549 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				511BAB82B4D1368118DAD760 /* KEWX_sample.bin in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
