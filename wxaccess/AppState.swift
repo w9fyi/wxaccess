@@ -16,6 +16,9 @@ final class AppState {
     var showAbout: Bool = false
     var tiltIndex: Int = 0
 
+    // All sweeps decoded from the current scan file — all elevations, all products.
+    private var allSweeps: [RadarSweep] = []
+
     var statusDescription: String {
         if isLoading { return "Loading…" }
         if let sweep = currentSweep {
@@ -45,14 +48,23 @@ final class AppState {
         errorMessage = nil
         do {
             let data = try await Level2Fetcher.shared.download(entry: entry)
-            let decoder = Level2Decoder()
-            let sweeps = try decoder.decode(data: data)
-            currentSweep = sweeps.first(where: { abs($0.elevationAngle - tiltAngle(for: tiltIndex)) < 0.5 })
-                ?? sweeps.first
+            allSweeps = try Level2Decoder().decode(data: data)
+            selectCurrentSweep()
         } catch {
             errorMessage = error.localizedDescription
         }
         isLoading = false
+    }
+
+    /// Re-select `currentSweep` from the already-decoded sweep cache.
+    /// Call this when `selectedProduct` or `tiltIndex` changes without a new download.
+    func selectCurrentSweep() {
+        let target = tiltAngle(for: tiltIndex)
+        let product = selectedProduct.rawValue
+        currentSweep =
+            allSweeps.first { $0.momentType == product && abs($0.elevationAngle - target) < 0.5 }
+            ?? allSweeps.first { $0.momentType == product }
+            ?? allSweeps.first
     }
 
     private func tiltAngle(for index: Int) -> Double {

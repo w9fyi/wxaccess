@@ -18,20 +18,41 @@ struct Level2DecoderTests {
             return  // skip if sample not bundled
         }
         let data = try Data(contentsOf: url)
-        let decoder = Level2Decoder()
-        let sweeps = try decoder.decode(data: data)
+        let sweeps = try Level2Decoder().decode(data: data)
         #expect(!sweeps.isEmpty)
         let first = try #require(sweeps.first)
         #expect(first.radials.isEmpty == false)
         // Scan date must be in 2026, not ~1956 (pre-fix bug produced wrong year)
-        let year = Calendar(identifier: .gregorian)
-            .component(.year, from: first.scanTime)
+        let year = Calendar(identifier: .gregorian).component(.year, from: first.scanTime)
         #expect(year == 2026)
         // Azimuth and elevation angles must be physically plausible
         let radial = try #require(first.radials.first)
         #expect(radial.azimuth >= 0 && radial.azimuth < 360)
         #expect(radial.elevation > 0 && radial.elevation < 20)
         #expect(radial.numGates > 0)
+    }
+
+    @Test("Multiple moment types decoded from real file")
+    func multipleProducts() throws {
+        guard let url = Bundle(for: Level2DecoderTestClass.self)
+                .url(forResource: "KEWX_sample", withExtension: "bin") else {
+            return
+        }
+        let data = try Data(contentsOf: url)
+        let sweeps = try Level2Decoder().decode(data: data)
+        let products = Set(sweeps.map(\.momentType))
+        // KEWX dual-pol scan always has at least REF, ZDR, PHI, and RHO
+        #expect(products.contains("REF"))
+        #expect(products.contains("ZDR"))
+        #expect(products.contains("PHI"))
+        #expect(products.contains("RHO"))
+        // Each product sweep should have valid radials
+        let refSweeps = sweeps.filter { $0.momentType == "REF" }
+        #expect(!refSweeps.isEmpty)
+        #expect(refSweeps.allSatisfy { !$0.radials.isEmpty })
+        // ZDR uses 16-bit gate data — values should be UInt16
+        let zdrSweep = try #require(sweeps.first { $0.momentType == "ZDR" })
+        #expect(zdrSweep.radials.first?.data.isEmpty == false)
     }
 
     @Test("BZip2 round-trip")

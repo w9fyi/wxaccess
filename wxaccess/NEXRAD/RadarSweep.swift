@@ -22,7 +22,9 @@ struct Radial: Sendable {
     let numGates: Int
     let scale: Float           // raw → physical: physical = (raw - offset) / scale
     let offset: Float
-    let data: [UInt8]          // raw gate values; 0 = below threshold, 1 = range folded
+    // Gate values: 0 = below threshold, 1 = range folded, 2+ = valid.
+    // UInt16 covers both 8-bit (REF, RHO) and 16-bit (VEL, ZDR, PHI) NEXRAD moments.
+    let data: [UInt16]
 
     func physicalValue(gateIndex: Int) -> Float? {
         guard gateIndex < data.count else { return nil }

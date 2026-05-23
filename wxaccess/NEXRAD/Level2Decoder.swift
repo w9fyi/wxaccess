@@ -46,7 +46,8 @@ final class Level2Decoder {
             ?? NEXRADSite(icao: icao, name: icao, state: "", latitude: 0, longitude: 0, elevationMeters: 0)
 
         var offset = Offsets.volumeHeaderSize
-        var allRadials: [Float: [Radial]] = [:]  // keyed by rounded elevation angle
+        // keyed by rounded elevation → moment type → radials
+        var allRadials: [Float: [String: [Radial]]] = [:]
         var scanTime: Date = header.date
         var vcpNumber: Int = 0
 
@@ -73,29 +74,31 @@ final class Level2Decoder {
             }
             offset += blockSize
 
-            let (radials, vcp, time) = parseMessages(from: blockData)
+            let (pairs, vcp, time) = parseMessages(from: blockData)
             if vcp != 0 { vcpNumber = vcp }
             if time != nil { scanTime = time! }
-            for radial in radials {
+            for (momentType, radial) in pairs {
                 let key = Float((radial.elevation * 10).rounded()) / 10
-                allRadials[key, default: []].append(radial)
+                allRadials[key, default: [:]][momentType, default: []].append(radial)
             }
         }
 
         guard !allRadials.isEmpty else { throw Level2DecodeError.noRadials }
 
-        return allRadials
-            .sorted { $0.key < $1.key }
-            .map { (elevKey, radials) in
-                RadarSweep(
+        var sweeps: [RadarSweep] = []
+        for (elevKey, momentMap) in allRadials {
+            for (momentType, radials) in momentMap {
+                sweeps.append(RadarSweep(
                     site: resolvedSite,
                     scanTime: scanTime,
                     elevationAngle: Double(elevKey),
                     vcpNumber: vcpNumber,
                     radials: radials.sorted { $0.azimuth < $1.azimuth },
-                    momentType: radials.first.map { _ in "REF" } ?? "REF"
-                )
+                    momentType: momentType
+                ))
             }
+        }
+        return sweeps.sorted { ($0.elevationAngle, $0.momentType) < ($1.elevationAngle, $1.momentType) }
     }
 
     // MARK: - Volume Header
@@ -131,8 +134,8 @@ final class Level2Decoder {
 
     // MARK: - LDM record message parsing
 
-    private func parseMessages(from data: Data) -> (radials: [Radial], vcp: Int, time: Date?) {
-        var radials: [Radial] = []
+    private func parseMessages(from data: Data) -> (pairs: [(String, Radial)], vcp: Int, time: Date?) {
+        var pairs: [(String, Radial)] = []
         var vcp = 0
         var time: Date? = nil
         var offset = 0
@@ -144,24 +147,23 @@ final class Level2Decoder {
         while offset + Offsets.ctmSize + Offsets.msgHeaderSize <= data.count {
             offset += Offsets.ctmSize  // skip CTM
 
-            let base    = data.startIndex + offset
-            let sizeHW  = data.readUInt16BE(at: base)
-            let msgType = data[base + Offsets.msgHeaderType]
+            let base       = data.startIndex + offset
+            let sizeHW     = data.readUInt16BE(at: base)
+            let msgType    = data[base + Offsets.msgHeaderType]
             let totalBytes = Int(sizeHW) * 2
 
             if msgType == 31, totalBytes >= Offsets.msgHeaderSize {
-                if let (radial, t, v) = parseMessage31(data: data, msgBase: offset) {
-                    radials.append(radial)
-                    if t != nil { time = t }
-                    if v != 0 { vcp = v }
-                }
+                let (newPairs, t, v) = parseMessage31(data: data, msgBase: offset)
+                pairs.append(contentsOf: newPairs)
+                if let t { time = t }
+                if v != 0 { vcp = v }
             }
 
             guard totalBytes >= Offsets.msgHeaderSize else { break }
             offset += totalBytes
         }
 
-        return (radials, vcp, time)
+        return (pairs, vcp, time)
     }
 
     // MARK: - Message 31: Generic Radial Data
@@ -188,59 +190,69 @@ final class Level2Decoder {
         static let headerSize    = 32  // bytes before block pointers
     }
 
-    private func parseMessage31(data: Data, msgBase: Int) -> (Radial, Date?, Int)? {
+    // Supported data moment names; "SW " has a trailing space in the ICD 3-char field.
+    private static let supportedMoments: Set<String> = ["REF", "VEL", "SW ", "ZDR", "PHI", "RHO"]
+
+    private func parseMessage31(data: Data, msgBase: Int) -> (pairs: [(String, Radial)], time: Date?, vcp: Int) {
         // msgBase is the byte offset of the 16-byte message header within `data`.
         // Message 31 body begins immediately after the header.
         let bodyBase = data.startIndex + msgBase + Offsets.msgHeaderSize
 
-        guard bodyBase + M31.blockPtrs + 4 <= data.endIndex else { return nil }
+        guard bodyBase + M31.blockPtrs + 4 <= data.endIndex else { return ([], nil, 0) }
 
-        let azimuth  = data.readFloat32BE(at: bodyBase + M31.azimuthAngle)
-        let elevation = data.readFloat32BE(at: bodyBase + M31.elevAngle)
+        let azimuth    = data.readFloat32BE(at: bodyBase + M31.azimuthAngle)
+        let elevation  = data.readFloat32BE(at: bodyBase + M31.elevAngle)
         let blockCount = Int(data.readUInt16BE(at: bodyBase + M31.blockCount))
 
-        guard blockCount > 0, blockCount <= 10 else { return nil }
+        guard blockCount > 0, blockCount <= 12 else { return ([], nil, 0) }
 
-        // Parse each data block pointer and find REF (and optionally others)
-        var refRadial: Radial? = nil
+        var pairs: [(String, Radial)] = []
+
         for i in 0..<blockCount {
             let ptrOffset = bodyBase + M31.blockPtrs + i * 4
             guard ptrOffset + 4 <= data.endIndex else { break }
             let blockOffset = Int(data.readUInt32BE(at: ptrOffset))
-            let blockBase = bodyBase + blockOffset
+            let blockBase   = bodyBase + blockOffset
 
             guard blockBase + 28 <= data.endIndex else { continue }
 
-            // Data Block header:
-            //   1 byte:  block type ('R'=radial data, 'V'=volume, 'E'=elevation, 'D'=derived)
-            //   3 bytes: data name ("REF", "VEL", "SW ", "ZDR", "PHI", "RHO", "CFP")
-            let blockType = data[blockBase]
-            guard blockType == UInt8(ascii: "D") else { continue }
+            // Data Block header (4 bytes): block type 'D' + 3-char moment name
+            guard data[blockBase] == UInt8(ascii: "D") else { continue }
+            let rawName = String(bytes: data[(blockBase + 1)..<(blockBase + 4)], encoding: .ascii) ?? ""
+            guard Level2Decoder.supportedMoments.contains(rawName) else { continue }
+            let momentType = rawName.trimmingCharacters(in: .whitespaces)
 
-            let name = String(bytes: data[(blockBase + 1)..<(blockBase + 4)], encoding: .ascii) ?? ""
-            guard name == "REF" else { continue }  // Phase 1: reflectivity only
+            // Moment Data Block (offsets relative to blockBase):
+            //   [4-7]:   reserved
+            //   [8-9]:   number of gates (uint16 BE)
+            //   [10-11]: range to first gate (uint16 BE, meters)
+            //   [12-13]: gate interval (uint16 BE, meters)
+            //   [14-15]: SNR threshold (int16 BE, x0.125 dB) — skip
+            //   [16-17]: control flags — skip
+            //   [18]:    control flags byte 2 — skip
+            //   [19]:    data word size (8 or 16 bits)
+            //   [20-23]: scale (float32 BE)
+            //   [24-27]: offset (float32 BE)
+            //   [28+]:   gate data (wordSize/8 bytes per gate)
+            let wordSize  = Int(data[blockBase + 19])  // 8 or 16
+            let numGates  = Int(data.readUInt16BE(at: blockBase + 8))
+            let firstGate = Int(data.readUInt16BE(at: blockBase + 10))
+            let gateSize  = Int(data.readUInt16BE(at: blockBase + 12))
+            let scale     = data.readFloat32BE(at: blockBase + 20)
+            let offset    = data.readFloat32BE(at: blockBase + 24)
+            let dataStart = blockBase + 28
 
-            // Moment Data Block header offsets (after 4-byte name):
-            //   4 bytes: reserved
-            //   2 bytes: number of gates (uint16 BE)
-            //   2 bytes: range to first gate (uint16 BE, meters)
-            //   2 bytes: gate interval (uint16 BE, meters)
-            //   2 bytes: RF SNR threshold (int16 BE, x0.125 dB) – skip
-            //   2 bytes: miscellaneous modes – skip
-            //   4 bytes: scale (float32 BE)
-            //   4 bytes: offset (float32 BE)
-            //   then gate data (1 byte per gate for 8-bit, 2 bytes for 16-bit)
-            let numGates    = Int(data.readUInt16BE(at: blockBase + 8))
-            let firstGate   = Int(data.readUInt16BE(at: blockBase + 10))
-            let gateSize    = Int(data.readUInt16BE(at: blockBase + 12))
-            let scale       = data.readFloat32BE(at: blockBase + 20)
-            let offset      = data.readFloat32BE(at: blockBase + 24)
-            let dataStart   = blockBase + 28
+            let bytesNeeded = numGates * (wordSize == 16 ? 2 : 1)
+            guard dataStart + bytesNeeded <= data.endIndex, numGates > 0 else { continue }
 
-            guard dataStart + numGates <= data.endIndex, numGates > 0 else { continue }
+            let gateValues: [UInt16]
+            if wordSize == 16 {
+                gateValues = (0..<numGates).map { data.readUInt16BE(at: dataStart + $0 * 2) }
+            } else {
+                gateValues = data[dataStart..<(dataStart + numGates)].map { UInt16($0) }
+            }
 
-            let gateBytes = Array(data[dataStart..<(dataStart + numGates)])
-            refRadial = Radial(
+            pairs.append((momentType, Radial(
                 azimuth: Double(azimuth),
                 elevation: Double(elevation),
                 firstGateMeters: firstGate,
@@ -248,8 +260,8 @@ final class Level2Decoder {
                 numGates: numGates,
                 scale: scale,
                 offset: offset,
-                data: gateBytes
-            )
+                data: gateValues
+            )))
         }
 
         // Time from M31 radial header; NEXRAD MJD is 1-based days since Jan 1 1970.
@@ -257,8 +269,7 @@ final class Level2Decoder {
         let mjd = Int(data.readUInt16BE(at: bodyBase + M31.julianDate))
         let t   = Date(timeIntervalSince1970: Double(mjd - 1) * 86400.0 + Double(ms) / 1000.0)
 
-        guard let radial = refRadial else { return nil }
-        return (radial, t, 0)
+        return (pairs, t, 0)
     }
 
     // MARK: - Offsets

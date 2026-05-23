@@ -78,6 +78,9 @@ private struct ProductPicker: View {
         .pickerStyle(.menu)
         .accessibilityLabel("Radar product: \(appState.selectedProduct.displayName)")
         .frame(width: 160)
+        .onChange(of: appState.selectedProduct) { _, _ in
+            appState.selectCurrentSweep()
+        }
     }
 }
 
@@ -97,9 +100,7 @@ private struct TiltPicker: View {
         .accessibilityLabel("Elevation tilt: \(tilts[appState.tiltIndex])")
         .frame(width: 80)
         .onChange(of: appState.tiltIndex) { _, _ in
-            if let scan = appState.selectedScan {
-                Task { await appState.loadScan(scan) }
-            }
+            appState.selectCurrentSweep()
         }
     }
 }

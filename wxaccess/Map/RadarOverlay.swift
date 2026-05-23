@@ -64,9 +64,9 @@ final class RadarOverlay: NSObject, MKOverlay, @unchecked Sendable {
                       radial.gateSizeMeters > 0 else { continue }
 
                 let gateIndex = Int((rangeKm * 1000 - Double(radial.firstGateMeters)) / Double(radial.gateSizeMeters))
-                guard let dbz = radial.physicalValue(gateIndex: gateIndex) else { continue }
+                guard let value = radial.physicalValue(gateIndex: gateIndex) else { continue }
 
-                pixels[row * width + col] = reflectivityColor(dbz: dbz)
+                pixels[row * width + col] = momentColor(value: value, momentType: sweep.momentType)
             }
         }
 
@@ -87,11 +87,22 @@ final class RadarOverlay: NSObject, MKOverlay, @unchecked Sendable {
         return image
     }
 
-    // Standard NWS reflectivity color table (dBZ → RGBA uint32, RGBA order)
+    private static func momentColor(value: Float, momentType: String) -> UInt32 {
+        switch momentType {
+        case "VEL": return velocityColor(ms: value)
+        case "ZDR": return zdrColor(db: value)
+        case "RHO": return rhoColor(cc: value)
+        case "PHI": return phiColor(deg: value)
+        case "SW":  return swColor(ms: value)
+        default:    return reflectivityColor(dbz: value)
+        }
+    }
+
+    // Standard NWS reflectivity color table (dBZ)
     private static func reflectivityColor(dbz: Float) -> UInt32 {
         switch dbz {
-        case ..<5:   return 0
-        case 5..<10: return rgba(0x00, 0xEC, 0xEC)
+        case ..<5:    return 0
+        case 5..<10:  return rgba(0x00, 0xEC, 0xEC)
         case 10..<15: return rgba(0x01, 0x9F, 0xF4)
         case 15..<20: return rgba(0x03, 0x00, 0xF4)
         case 20..<25: return rgba(0x02, 0xFD, 0x02)
@@ -109,7 +120,87 @@ final class RadarOverlay: NSObject, MKOverlay, @unchecked Sendable {
         }
     }
 
+    // NWS velocity color table (m/s; negative = toward radar)
+    private static func velocityColor(ms: Float) -> UInt32 {
+        switch ms {
+        case ..<(-50):  return rgba(0x00, 0x00, 0x7F)
+        case -50 ..< -30: return rgba(0x00, 0x00, 0xEC)
+        case -30 ..< -20: return rgba(0x00, 0x9E, 0xFF)
+        case -20 ..< -10: return rgba(0x00, 0xF0, 0xF0)
+        case -10 ..< 0:   return rgba(0x00, 0xC8, 0x00)
+        case 0   ..< 10:  return rgba(0xC8, 0xC8, 0x00)
+        case 10  ..< 20:  return rgba(0xFF, 0x96, 0x00)
+        case 20  ..< 30:  return rgba(0xFF, 0x00, 0x00)
+        case 30  ..< 50:  return rgba(0xC8, 0x00, 0x00)
+        default:          return rgba(0x7F, 0x00, 0x00)
+        }
+    }
+
+    // Differential reflectivity (dB)
+    private static func zdrColor(db: Float) -> UInt32 {
+        switch db {
+        case ..<(-1):   return rgba(0x00, 0x00, 0xC8)
+        case -1 ..< 0:  return rgba(0x00, 0x96, 0xFF)
+        case 0  ..< 1:  return rgba(0x00, 0xC8, 0x96)
+        case 1  ..< 2:  return rgba(0x00, 0xC8, 0x00)
+        case 2  ..< 3:  return rgba(0xC8, 0xC8, 0x00)
+        case 3  ..< 4:  return rgba(0xFF, 0x96, 0x00)
+        case 4  ..< 5:  return rgba(0xFF, 0x00, 0x00)
+        default:        return rgba(0xFF, 0x00, 0xFF)
+        }
+    }
+
+    // Correlation coefficient (0–1)
+    private static func rhoColor(cc: Float) -> UInt32 {
+        switch cc {
+        case ..<0.7:    return rgba(0x00, 0x00, 0x00)
+        case 0.7 ..< 0.85: return rgba(0x96, 0x32, 0x96)
+        case 0.85 ..< 0.90: return rgba(0x00, 0x00, 0xFF)
+        case 0.90 ..< 0.95: return rgba(0x00, 0xC8, 0xFF)
+        case 0.95 ..< 0.97: return rgba(0x00, 0xC8, 0x00)
+        case 0.97 ..< 0.99: return rgba(0xFF, 0xFF, 0x00)
+        default:        return rgba(0xFF, 0xFF, 0xFF)
+        }
+    }
+
+    // Differential phase (degrees, 0–360)
+    private static func phiColor(deg: Float) -> UInt32 {
+        let hue = (deg / 360.0).truncatingRemainder(dividingBy: 1.0)
+        let (r, g, b) = hsvToRgb(h: hue, s: 0.85, v: 0.90)
+        return rgba(r, g, b)
+    }
+
+    // Spectrum width (m/s, 0–~20)
+    private static func swColor(ms: Float) -> UInt32 {
+        switch ms {
+        case ..<2:   return rgba(0x00, 0x00, 0x96)
+        case 2..<4:  return rgba(0x00, 0x64, 0xFF)
+        case 4..<6:  return rgba(0x00, 0xC8, 0x96)
+        case 6..<8:  return rgba(0x00, 0xC8, 0x00)
+        case 8..<10: return rgba(0xC8, 0xC8, 0x00)
+        case 10..<13: return rgba(0xFF, 0x96, 0x00)
+        case 13..<16: return rgba(0xFF, 0x00, 0x00)
+        default:     return rgba(0xFF, 0xFF, 0xFF)
+        }
+    }
+
     private static func rgba(_ r: UInt32, _ g: UInt32, _ b: UInt32, a: UInt32 = 210) -> UInt32 {
         (r << 24) | (g << 16) | (b << 8) | a
+    }
+
+    private static func hsvToRgb(h: Float, s: Float, v: Float) -> (UInt32, UInt32, UInt32) {
+        let i = Int(h * 6)
+        let f = h * 6 - Float(i)
+        let p = v * (1 - s), q = v * (1 - f * s), t = v * (1 - (1 - f) * s)
+        let (r, g, b): (Float, Float, Float)
+        switch i % 6 {
+        case 0: (r, g, b) = (v, t, p)
+        case 1: (r, g, b) = (q, v, p)
+        case 2: (r, g, b) = (p, v, t)
+        case 3: (r, g, b) = (p, q, v)
+        case 4: (r, g, b) = (t, p, v)
+        default: (r, g, b) = (v, p, q)
+        }
+        return (UInt32(r * 255), UInt32(g * 255), UInt32(b * 255))
     }
 }
