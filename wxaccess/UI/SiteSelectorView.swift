@@ -44,6 +44,7 @@ struct SiteSelectorView: View {
             Divider()
 
             List(filtered, id: \.id, selection: $selectionId) { site in
+                let isActive = appState.selectedSite.id == site.id
                 Button {
                     selectionId = site.id
                     appState.selectedSite = site
@@ -57,13 +58,18 @@ struct SiteSelectorView: View {
                     }
                 }
                 .buttonStyle(.plain)
-                .accessibilityLabel(site.displayName)
-                .accessibilityAddTraits(.isButton)
-                .accessibilityHint("Load radar data for this site")
+                .accessibilityLabel(isActive
+                    ? "\(site.displayName), currently loaded"
+                    : site.displayName)
+                .accessibilityAddTraits(isActive ? [.isButton, .isSelected] : .isButton)
+                .accessibilityHint(isActive ? "" : "Load radar data for this site")
             }
             .searchable(text: $search, prompt: "ICAO, city, or state")
         }
         .navigationTitle("Radar Sites")
         .onAppear { selectionId = appState.selectedSite.id }
+        .onChange(of: appState.selectedSite.id) { _, newId in
+            selectionId = newId
+        }
     }
 }

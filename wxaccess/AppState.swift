@@ -137,8 +137,15 @@ final class AppState: NSObject {
             let data = try await Level2Fetcher.shared.download(entry: entry)
             allSweeps = try Level2Decoder().decode(data: data)
             selectCurrentSweep()
+            if let sweep = currentSweep {
+                let msg = "Radar loaded: \(sweep.site.displayName), \(selectedProduct.displayName)"
+                NSAccessibility.post(element: NSApp as AnyObject, notification: .announcementRequested,
+                                     userInfo: [NSAccessibility.NotificationUserInfoKey.announcement: msg])
+            }
         } catch {
             errorMessage = error.localizedDescription
+            NSAccessibility.post(element: NSApp as AnyObject, notification: .announcementRequested,
+                                 userInfo: [NSAccessibility.NotificationUserInfoKey.announcement: "Failed to load radar data: \(error.localizedDescription)"])
         }
         isLoading = false
     }
