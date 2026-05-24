@@ -1,15 +1,19 @@
 import Foundation
 import OSLog
 
-// Fetches NEXRAD Level 3 products from the Unidata public AWS S3 bucket.
-// Bucket: unidata-nexrad-level3 (anonymous access OK, no requester-pays)
-// Key format (flat): {ICAO}_{MNEMONIC}_{YYYY}_{MM}_{DD}_{HH}_{mm}_{SS}
-// Example:           KEWX_N0Q_2024_05_17_12_03_45
+// Fetches NEXRAD Level 3 products from Unidata THREDDS (migrated from dead S3 bucket).
+// The former unidata-nexrad-level3 S3 bucket only retains data from 2020; THREDDS
+// provides the same NIDS format with 14-day rolling retention and free HTTP access.
+//
+// THREDDS uses 3-letter site codes (KEWX → EWX — drop the leading character).
+// Catalog: https://thredds.ucar.edu/thredds/catalog/nexrad/level3/{MNEMONIC}/{site}/{YYYYMMDD}/catalog.xml
+// Download: https://thredds.ucar.edu/thredds/fileServer/{urlPath}
+// Filename: Level3_{site}_{MNEMONIC}_{YYYYMMDD}_{HHMM}.nids
 
 final class Level3Fetcher: @unchecked Sendable {
     static let shared = Level3Fetcher()
 
-    private let base = "https://unidata-nexrad-level3.s3.amazonaws.com"
+    private let threddsBase = "https://thredds.ucar.edu/thredds"
     private let logger = Logger(subsystem: "net.ai5os.wxaccess", category: "Level3Fetcher")
     private let session: URLSession = {
         let cfg = URLSessionConfiguration.default
@@ -19,20 +23,37 @@ final class Level3Fetcher: @unchecked Sendable {
     }()
 
     // Returns up to `limit` most-recent scans for a site + product.
+    // Searches today and yesterday so scans near midnight UTC are never missed.
     func listScans(site: NEXRADSite, product: Level3ProductCode,
                    limit: Int = 20) async throws -> [Level3ScanEntry] {
-        // Flat prefix: "KEWX_N0Q_" matches all keys for that site+product
-        let prefix = "\(site.icao)_\(product.mnemonic)_"
-        guard let listURL = URL(string: "\(base)?prefix=\(prefix)&list-type=2") else {
-            throw URLError(.badURL)
+        let site3 = String(site.icao.dropFirst())   // "KEWX" → "EWX"
+        let cal   = Calendar(identifier: .gregorian)
+        var entries: [Level3ScanEntry] = []
+
+        for daysAgo in 0..<2 {
+            guard let date = cal.date(byAdding: .day, value: -daysAgo, to: .now) else { continue }
+            let comps    = cal.dateComponents(in: .gmt, from: date)
+            let yyyymmdd = String(format: "%04d%02d%02d", comps.year!, comps.month!, comps.day!)
+
+            guard let url = URL(string:
+                "\(threddsBase)/catalog/nexrad/level3/\(product.mnemonic)/\(site3)/\(yyyymmdd)/catalog.xml")
+            else { continue }
+
+            guard let (xmlData, response) = try? await session.data(from: url),
+                  let http = response as? HTTPURLResponse, http.statusCode == 200
+            else { continue }
+
+            let dayEntries = parseThreddsCatalog(xmlData: xmlData, site: site, product: product)
+            entries.append(contentsOf: dayEntries)
+            if entries.count >= limit { break }
         }
-        let (xmlData, _) = try await session.data(from: listURL)
-        let entries = try parseS3Listing(xmlData: xmlData, site: site, product: product)
-        return Array(entries.prefix(limit))
+
+        guard !entries.isEmpty else { throw URLError(.fileDoesNotExist) }
+        return Array(entries.sorted { $0.scanTime > $1.scanTime }.prefix(limit))
     }
 
     func download(entry: Level3ScanEntry) async throws -> Data {
-        guard let url = URL(string: "\(base)/\(entry.id)") else {
+        guard let url = URL(string: "\(threddsBase)/fileServer/\(entry.id)") else {
             throw URLError(.badURL)
         }
         do {
@@ -47,14 +68,14 @@ final class Level3Fetcher: @unchecked Sendable {
         }
     }
 
-    // MARK: - S3 XML listing
+    // MARK: - THREDDS InvCatalog XML parser
 
-    private func parseS3Listing(xmlData: Data, site: NEXRADSite,
-                                 product: Level3ProductCode) throws -> [Level3ScanEntry] {
-        let parser = Level3S3Parser(site: site, product: product)
-        let xmlParser = XMLParser(data: xmlData)
-        xmlParser.delegate = parser
-        xmlParser.parse()
+    private func parseThreddsCatalog(xmlData: Data, site: NEXRADSite,
+                                      product: Level3ProductCode) -> [Level3ScanEntry] {
+        let parser = Level3CatalogParser(site: site, product: product)
+        let xp     = XMLParser(data: xmlData)
+        xp.delegate = parser
+        xp.parse()
         return parser.entries.sorted { $0.scanTime > $1.scanTime }
     }
 }
@@ -62,7 +83,7 @@ final class Level3Fetcher: @unchecked Sendable {
 // MARK: - Scan entry
 
 struct Level3ScanEntry: Sendable, Identifiable, Hashable {
-    let id: String                  // S3 key, e.g. "KEWX/N0Q/KEWX_20240517_120345"
+    let id: String                  // THREDDS urlPath, e.g. "nexrad/level3/EET/EWX/20260523/Level3_EWX_EET_20260523_2356.nids"
     let site: NEXRADSite
     let product: Level3ProductCode
     let scanTime: Date
@@ -71,52 +92,38 @@ struct Level3ScanEntry: Sendable, Identifiable, Hashable {
 
 // MARK: - XMLParserDelegate
 
-private final class Level3S3Parser: NSObject, XMLParserDelegate, @unchecked Sendable {
+private final class Level3CatalogParser: NSObject, XMLParserDelegate, @unchecked Sendable {
     let site: NEXRADSite
     let product: Level3ProductCode
     var entries: [Level3ScanEntry] = []
 
-    private var currentKey = ""
-    private var inKey = false
-
     init(site: NEXRADSite, product: Level3ProductCode) {
-        self.site = site
-        self.product = product
+        self.site = site; self.product = product
     }
 
     func parser(_ parser: XMLParser, didStartElement elementName: String,
                 namespaceURI: String?, qualifiedName: String?,
                 attributes: [String: String] = [:]) {
-        if elementName == "Key" { inKey = true; currentKey = "" }
+        guard elementName == "dataset",
+              let name    = attributes["name"],
+              let urlPath = attributes["urlPath"],
+              name.hasSuffix(".nids"),
+              !urlPath.isEmpty,
+              let date = dateFromFilename(name)
+        else { return }
+        entries.append(Level3ScanEntry(id: urlPath, site: site, product: product,
+                                       scanTime: date, fileName: name))
     }
 
-    func parser(_ parser: XMLParser, foundCharacters string: String) {
-        if inKey { currentKey += string }
-    }
-
-    func parser(_ parser: XMLParser, didEndElement elementName: String,
-                namespaceURI: String?, qualifiedName: String?) {
-        guard elementName == "Key" else { return }
-        inKey = false
-        // Key format: KEWX_N0Q_2024_05_17_12_03_45  (8 underscore-delimited parts)
-        let parts = currentKey.split(separator: "_")
-        guard parts.count == 8,
-              String(parts[0]) == site.icao,
-              String(parts[1]) == product.mnemonic else { return }
-        guard let date = dateFromParts(parts) else { return }
-        entries.append(Level3ScanEntry(
-            id: currentKey, site: site, product: product,
-            scanTime: date, fileName: currentKey
-        ))
-    }
-
-    // Parts: [ICAO, MNEMONIC, YYYY, MM, DD, HH, mm, SS]
-    private func dateFromParts(_ parts: [Substring]) -> Date? {
-        guard parts.count == 8 else { return nil }
-        let dateStr = "\(parts[2])\(parts[3])\(parts[4])\(parts[5])\(parts[6])\(parts[7])"
+    // Filename format: Level3_EWX_EET_20260523_2356.nids
+    private func dateFromFilename(_ name: String) -> Date? {
+        guard name.hasSuffix(".nids") else { return nil }
+        let parts = name.dropLast(5).split(separator: "_")
+        guard parts.count >= 5 else { return nil }
+        let dateStr = String(parts[parts.count - 2]) + String(parts[parts.count - 1])
         let fmt = DateFormatter()
-        fmt.dateFormat = "yyyyMMddHHmmss"
-        fmt.timeZone = TimeZone(identifier: "UTC") ?? TimeZone(secondsFromGMT: 0)
+        fmt.dateFormat = "yyyyMMddHHmm"
+        fmt.timeZone = TimeZone(identifier: "UTC")
         return fmt.date(from: dateStr)
     }
 }

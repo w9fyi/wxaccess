@@ -25,6 +25,9 @@ struct AccessibilityPanel: View {
                 if appState.showStormReports {
                     Divider(); stormReportsSection
                 }
+                if appState.showStormCells {
+                    Divider(); stormCellsSection
+                }
                 if appState.showSurfaceObs {
                     Divider(); surfaceObsSection
                 }
@@ -354,6 +357,35 @@ struct AccessibilityPanel: View {
         }
         .accessibilityElement(children: .contain)
         .accessibilityLabel("SPC storm reports: \(appState.stormReports.count) today")
+        .accessibilityAddTraits(.updatesFrequently)
+    }
+
+    // MARK: - Storm Cells
+
+    private var stormCellsSection: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Label("Storm Cells", systemImage: "tornado")
+                .font(.caption.weight(.semibold)).foregroundStyle(.secondary)
+            if appState.stormCells.isEmpty {
+                Text("No storm cells identified by SCIT algorithm.")
+                    .font(.caption).foregroundStyle(.secondary)
+            } else {
+                dataRow(label: "Cells", value: "\(appState.stormCells.count) tracked")
+                ForEach(appState.stormCells.prefix(5)) { cell in
+                    Text(cell.accessibilityDescription)
+                        .font(.caption2).foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                if appState.stormCells.count > 5 {
+                    Text("…and \(appState.stormCells.count - 5) more cells")
+                        .font(.caption2).foregroundStyle(.tertiary)
+                }
+                Text("Tap cell markers on map for details.")
+                    .font(.caption2).foregroundStyle(.tertiary)
+            }
+        }
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel("Storm cells: \(appState.stormCells.count) tracked by SCIT")
         .accessibilityAddTraits(.updatesFrequently)
     }
 

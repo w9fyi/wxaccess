@@ -58,6 +58,9 @@
 		F81289F371DC8B22EDC87E8B /* Level3DecoderTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 43AE73BD7F74847050E8D860 /* Level3DecoderTests.swift */; };
 		F892BB1F16A70A37A2A0F5D6 /* AboutView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 736FAF014EC4E04E3C14AE60 /* AboutView.swift */; };
 		F968F1732A1C3A4145267911 /* Level2Fetcher.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2C18764F1DCBEF307380CCD3 /* Level2Fetcher.swift */; };
+		DD44EF6A7B8C9D0E1F2A3B4C /* StormCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA11BC3D4E5F6A7B8C9D0E1F /* StormCell.swift */; };
+		EE55FA7B8C9D0E1F2A3B4C5D /* SCITDecoder.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB22CD4E5F6A7B8C9D0E1F2A /* SCITDecoder.swift */; };
+		FF66AB8C9D0E1F2A3B4C5D6E /* SCITFetcher.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC33DE5F6A7B8C9D0E1F2A3B /* SCITFetcher.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -127,6 +130,9 @@
 		FC17D60D7002C8D4114F67E7 /* ColorScaleLegendView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ColorScaleLegendView.swift; sourceTree = "<group>"; };
 		FCF4BA2C2AAE815E0BD68F5B /* PlacefileFetcher.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlacefileFetcher.swift; sourceTree = "<group>"; };
 		FF2203BA2FDEE3A247DA70C9 /* SPCOutlookFetcher.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SPCOutlookFetcher.swift; sourceTree = "<group>"; };
+		AA11BC3D4E5F6A7B8C9D0E1F /* StormCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StormCell.swift; sourceTree = "<group>"; };
+		BB22CD4E5F6A7B8C9D0E1F2A /* SCITDecoder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SCITDecoder.swift; sourceTree = "<group>"; };
+		CC33DE5F6A7B8C9D0E1F2A3B /* SCITFetcher.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SCITFetcher.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -299,6 +305,9 @@
 				F4B2427136256697F4C94293 /* NEXRADSite.swift */,
 				7D5F0D56471C314E99C70706 /* NEXRADSiteCatalog.swift */,
 				B915F3EAA36E55DC60390310 /* RadarSweep.swift */,
+				AA11BC3D4E5F6A7B8C9D0E1F /* StormCell.swift */,
+				BB22CD4E5F6A7B8C9D0E1F2A /* SCITDecoder.swift */,
+				CC33DE5F6A7B8C9D0E1F2A3B /* SCITFetcher.swift */,
 			);
 			path = NEXRAD;
 			sourceTree = "<group>";
@@ -445,6 +454,9 @@
 				7F5DAEE1E82F55CD465FBD09 /* RadarOverlay.swift in Sources */,
 				59F480A0AF5A5FEE5D423C3D /* RadarOverlayRenderer.swift in Sources */,
 				A451B5AD544B0411470B4339 /* RadarSweep.swift in Sources */,
+				DD44EF6A7B8C9D0E1F2A3B4C /* StormCell.swift in Sources */,
+				EE55FA7B8C9D0E1F2A3B4C5D /* SCITDecoder.swift in Sources */,
+				FF66AB8C9D0E1F2A3B4C5D6E /* SCITFetcher.swift in Sources */,
 				A0466ABE11A061D76CC3C836 /* SPCMesoscaleDiscussion.swift in Sources */,
 				41234CF71BB5814CC9E13220 /* SPCMesoscaleDiscussionFetcher.swift in Sources */,
 				D95176CA3013C2A13A906B7D /* SPCOutlook.swift in Sources */,

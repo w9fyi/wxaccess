@@ -40,6 +40,10 @@ final class AppState: NSObject {
     var showRangeRings: Bool = false
     var colorPalette: ColorPalette = .nwsStandard
 
+    // MARK: - Storm cell tracking (SCIT / NST)
+    var stormCells: [StormCell] = []
+    var showStormCells: Bool = false
+
     // MARK: - Animation
     var isAnimating: Bool = false
     var animationFrames: [RadarSweep] = []
@@ -109,6 +113,7 @@ final class AppState: NSObject {
             async let reports  = SPCStormReportFetcher.shared.fetchReports()
             async let obs      = SurfaceObsFetcher.shared.fetchObs(near: selectedSite)
             async let pfiles   = PlacefileFetcher.shared.refresh(existing: placefiles, urls: placefileURLs)
+            async let cells    = SCITFetcher.shared.fetchLatest(site: selectedSite)
 
             availableScans = try await scans
             if let latest = availableScans.first {
@@ -120,6 +125,7 @@ final class AppState: NSObject {
             self.stormReports          = await reports
             self.surfaceObs            = await obs
             self.placefiles            = await pfiles
+            self.stormCells            = (try? await cells) ?? []
 
             notifyNewAlerts(self.alerts)
         } catch {

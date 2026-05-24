@@ -109,6 +109,30 @@ struct MainMapView: NSViewRepresentable {
             }
         }
 
+        // ── Storm cell tracks ──────────────────────────────────────
+        map.removeOverlays(map.overlays.filter { $0 is StormCellTrackOverlay })
+        if appState.showStormCells {
+            for cell in appState.stormCells {
+                if cell.past.count >= 2 {
+                    let pts = cell.past + [cell.current]
+                    map.addOverlay(StormCellTrackOverlay(coords: pts, type: .past),
+                                   level: .aboveLabels)
+                }
+                if let f30 = cell.forecast30min {
+                    var pts = [cell.current, f30]
+                    if let f60 = cell.forecast60min { pts.append(f60) }
+                    map.addOverlay(StormCellTrackOverlay(coords: pts, type: .forecast),
+                                   level: .aboveLabels)
+                }
+            }
+        }
+
+        // ── Storm cell annotations ─────────────────────────────────
+        map.removeAnnotations(map.annotations.filter { $0 is StormCellAnnotation })
+        if appState.showStormCells {
+            map.addAnnotations(appState.stormCells.map { StormCellAnnotation(cell: $0) })
+        }
+
         // ── Probe pin ─────────────────────────────────────────────────
         map.removeAnnotations(map.annotations.filter { $0 is ProbeAnnotation })
         if let probe = appState.probeResult {
@@ -201,6 +225,20 @@ struct MainMapView: NSViewRepresentable {
                 r.lineDashPattern = [6, 4]
                 return r
             }
+            if let track = overlay as? StormCellTrackOverlay {
+                let r = MKPolylineRenderer(polyline: track.polyline)
+                switch track.trackType {
+                case .past:
+                    r.strokeColor    = NSColor.white.withAlphaComponent(0.6)
+                    r.lineWidth      = 1.5
+                    r.lineDashPattern = [6, 4]
+                case .forecast:
+                    r.strokeColor    = NSColor.systemOrange.withAlphaComponent(0.8)
+                    r.lineWidth      = 1.5
+                    r.lineDashPattern = [3, 4]
+                }
+                return r
+            }
             if let ring = overlay as? RangeRingOverlay {
                 let r = MKCircleRenderer(circle: ring)
                 r.strokeColor    = NSColor.white.withAlphaComponent(0.55)
@@ -265,6 +303,18 @@ struct MainMapView: NSViewRepresentable {
                 return view
             }
 
+            if let cellAnnot = annotation as? StormCellAnnotation {
+                let id   = "stormCell"
+                let view = mapView.dequeueReusableAnnotationView(withIdentifier: id) as? MKMarkerAnnotationView
+                    ?? MKMarkerAnnotationView(annotation: annotation, reuseIdentifier: id)
+                view.annotation      = cellAnnot
+                view.displayPriority = .required
+                view.titleVisibility = .hidden
+                view.markerTintColor = NSColor.systemOrange
+                view.glyphText       = cellAnnot.cell.id
+                view.setAccessibilityLabel(cellAnnot.cell.accessibilityDescription)
+                return view
+            }
             if let probeAnnot = annotation as? ProbeAnnotation {
                 let id   = "probe"
                 let view = mapView.dequeueReusableAnnotationView(withIdentifier: id) as? MKMarkerAnnotationView
@@ -479,6 +529,31 @@ final class PlacefileAnnotation: NSObject, MKAnnotation, @unchecked Sendable {
     init(item: PlacefileItem) {
         self.item = item
         self.coordinate = item.coordinate
+        super.init()
+    }
+}
+
+// MARK: - Storm cell annotations and overlays
+
+final class StormCellAnnotation: NSObject, MKAnnotation, @unchecked Sendable {
+    let cell: StormCell
+    var coordinate: CLLocationCoordinate2D { cell.current }
+    var title: String? { cell.id }
+    init(cell: StormCell) { self.cell = cell; super.init() }
+}
+
+final class StormCellTrackOverlay: NSObject, MKOverlay, @unchecked Sendable {
+    enum TrackType { case past, forecast }
+    let trackType: TrackType
+    let polyline: MKPolyline
+
+    var coordinate: CLLocationCoordinate2D { polyline.coordinate }
+    var boundingMapRect: MKMapRect          { polyline.boundingMapRect }
+
+    init(coords: [CLLocationCoordinate2D], type: TrackType) {
+        self.trackType = type
+        var pts = coords
+        self.polyline = MKPolyline(coordinates: &pts, count: pts.count)
         super.init()
     }
 }

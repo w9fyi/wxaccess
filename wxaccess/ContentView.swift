@@ -93,6 +93,7 @@ private struct OverlaysPicker: View {
             Toggle("Range Rings",           isOn: $state.showRangeRings)
             Divider()
             Toggle("Storm Reports",         isOn: $state.showStormReports)
+            Toggle("Storm Cells",           isOn: $state.showStormCells)
             Toggle("Mesoscale Discussions", isOn: $state.showMesoscaleDiscussions)
             Divider()
             Toggle("Surface Observations",  isOn: $state.showSurfaceObs)
