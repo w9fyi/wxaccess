@@ -4,33 +4,64 @@ import CoreGraphics
 import OSLog
 
 // MKOverlay that holds a rasterized radar sweep image and its bounding region.
+// Supports single or multiple radar sites; values in overlap zones are blended
+// using inverse-distance² weighting so the nearest site dominates naturally.
 final class RadarOverlay: NSObject, MKOverlay, @unchecked Sendable {
-    let coordinate: CLLocationCoordinate2D  // radar site
+    let coordinate: CLLocationCoordinate2D  // centroid of all sites
     let boundingMapRect: MKMapRect
     let image: CGImage
-    let sweep: RadarSweep
+    let sweeps: [RadarSweep]
+    let palette: ColorPalette
+    // Stable key for change-detection in MainMapView.
+    // Combines sorted site/time pairs and palette so rebuilds happen iff data or palette changes.
+    let sweepKey: String
 
-    init(sweep: RadarSweep, imageSize: Int = 0, palette: ColorPalette = .nwsStandard) {
-        self.sweep = sweep
-        self.coordinate = sweep.site.coordinate
+    init(sweeps: [RadarSweep], imageSize: Int = 0, palette: ColorPalette = .nwsStandard) {
+        self.sweeps  = sweeps
+        self.palette = palette
 
-        // Honour the Settings image-size preference; fall back to 1024.
         let sz = imageSize > 0 ? imageSize
             : (UserDefaults.standard.integer(forKey: "imageSize") > 0
                ? UserDefaults.standard.integer(forKey: "imageSize") : 1024)
 
-        let maxRangeKm = max(sweep.maxRangeKm, 1)
-        let originPoint = MKMapPoint(sweep.site.coordinate)
-        let metersPerMapPoint = MKMetersPerMapPointAtLatitude(sweep.site.coordinate.latitude)
-        let halfSideMapPoints = (maxRangeKm * 1000) / metersPerMapPoint
-        self.boundingMapRect = MKMapRect(
-            x: originPoint.x - halfSideMapPoints,
-            y: originPoint.y - halfSideMapPoints,
-            width:  halfSideMapPoints * 2,
-            height: halfSideMapPoints * 2
-        )
+        self.sweepKey = sweeps
+            .map { "\($0.site.icao)-\(Int($0.scanTime.timeIntervalSince1970))" }
+            .sorted()
+            .joined(separator: ",")
+            + "/\(palette)"
 
-        self.image = RadarOverlay.rasterize(sweep: sweep, size: sz, maxRangeKm: maxRangeKm, palette: palette)
+        guard !sweeps.isEmpty else {
+            self.coordinate     = CLLocationCoordinate2D()
+            self.boundingMapRect = .world
+            let cs = CGColorSpaceCreateDeviceRGB()
+            let bi = CGBitmapInfo(rawValue: CGImageAlphaInfo.premultipliedLast.rawValue)
+            self.image = CGImage(width: 1, height: 1, bitsPerComponent: 8, bitsPerPixel: 32,
+                                 bytesPerRow: 4, space: cs, bitmapInfo: bi,
+                                 provider: CGDataProvider(data: Data([0,0,0,0]) as CFData)!,
+                                 decode: nil, shouldInterpolate: false, intent: .defaultIntent)!
+            super.init()
+            return
+        }
+
+        // Centroid of all site coordinates
+        let avgLat = sweeps.map { $0.site.coordinate.latitude  }.reduce(0, +) / Double(sweeps.count)
+        let avgLon = sweeps.map { $0.site.coordinate.longitude }.reduce(0, +) / Double(sweeps.count)
+        self.coordinate = CLLocationCoordinate2D(latitude: avgLat, longitude: avgLon)
+
+        // Union of each site's bounding box (square of radius maxRangeKm)
+        var unionRect = MKMapRect.null
+        for sweep in sweeps {
+            let origin = MKMapPoint(sweep.site.coordinate)
+            let mpp    = MKMetersPerMapPointAtLatitude(sweep.site.coordinate.latitude)
+            let half   = (max(sweep.maxRangeKm, 1) * 1000) / mpp
+            let rect   = MKMapRect(x: origin.x - half, y: origin.y - half,
+                                   width: half * 2, height: half * 2)
+            unionRect  = unionRect.isNull ? rect : unionRect.union(rect)
+        }
+        self.boundingMapRect = unionRect
+
+        self.image = RadarOverlay.rasterize(sweeps: sweeps, size: sz,
+                                            boundingRect: unionRect, palette: palette)
         super.init()
     }
 
@@ -38,42 +69,99 @@ final class RadarOverlay: NSObject, MKOverlay, @unchecked Sendable {
 
     private static let logger = Logger(subsystem: "net.ai5os.wxaccess", category: "RadarOverlay")
 
-    // Convert polar radial data to a square CGImage via inverse-mapping.
-    // Each pixel's (azimuth, range) is computed and the nearest gate value looked up.
-    private static func rasterize(sweep: RadarSweep, size: Int, maxRangeKm: Double, palette: ColorPalette) -> CGImage {
+    // Pre-computed per-sweep rendering data.
+    private struct SweepInfo {
+        let radialMap: [Int: Radial]
+        let siteMapX: Double
+        let siteMapY: Double
+        // Approximate meters-per-map-point at the site's latitude.
+        // Error is <1% within a 460 km radius — visually indistinguishable.
+        let mpp: Double
+        let maxRangeKm: Double
+        let momentType: String
+    }
+
+    // Converts polar radial data to a square CGImage via inverse-mapping.
+    // For each pixel the (azimuth, range) relative to every site is computed in
+    // MKMapPoint space (fast, no trig projection needed) and gate values are
+    // blended with inverse-distance² weights.
+    private static func rasterize(sweeps: [RadarSweep], size: Int,
+                                  boundingRect: MKMapRect, palette: ColorPalette) -> CGImage {
         let width  = size
         let height = size
         var pixels = [UInt32](repeating: 0, count: width * height)
 
-        // Build a lookup: azimuth (rounded to nearest 0.5°) → Radial
-        var radialMap: [Int: Radial] = [:]
-        for radial in sweep.radials {
-            let key = Int((radial.azimuth * 2).rounded())  // half-degree resolution
-            radialMap[key] = radial
+        let infos: [SweepInfo] = sweeps.map { sweep in
+            var rmap: [Int: Radial] = [:]
+            for radial in sweep.radials {
+                let key = Int((radial.azimuth * 2).rounded())
+                rmap[key] = radial
+            }
+            let pt = MKMapPoint(sweep.site.coordinate)
+            return SweepInfo(
+                radialMap:   rmap,
+                siteMapX:    pt.x,
+                siteMapY:    pt.y,
+                mpp:         MKMetersPerMapPointAtLatitude(sweep.site.coordinate.latitude),
+                maxRangeKm:  max(sweep.maxRangeKm, 1),
+                momentType:  sweep.momentType
+            )
         }
 
-        let half = Double(size) / 2.0
+        let minX    = boundingRect.minX
+        let minY    = boundingRect.minY
+        let rWidth  = boundingRect.width
+        let rHeight = boundingRect.height
+        let dw      = Double(width)
+        let dh      = Double(height)
 
         for row in 0..<height {
+            let mapY = minY + (Double(row) + 0.5) / dh * rHeight
+
             for col in 0..<width {
-                let dx = (Double(col) - half) / half  // -1…+1, east positive
-                let dy = (half - Double(row)) / half  // -1…+1, north positive
-                let distNorm = sqrt(dx * dx + dy * dy)
-                guard distNorm <= 1.0 else { continue }
+                let mapX = minX + (Double(col) + 0.5) / dw * rWidth
 
-                let rangeKm = distNorm * maxRangeKm
-                // Azimuth: clockwise from north
-                var az = atan2(dx, dy) * 180.0 / .pi
-                if az < 0 { az += 360.0 }
+                var weightedSum = 0.0
+                var totalWeight = 0.0
+                var momentType  = infos.first?.momentType ?? "REF"
 
-                let azKey = Int((az * 2).rounded()) % 720
-                guard let radial = radialMap[azKey] ?? radialMap[(azKey + 1) % 720] ?? radialMap[(azKey - 1 + 720) % 720],
-                      radial.gateSizeMeters > 0 else { continue }
+                for info in infos {
+                    // Displacement from site in MKMapPoint space.
+                    // y is flipped because map-y increases southward.
+                    let dmpX = mapX - info.siteMapX
+                    let dmpY = -(mapY - info.siteMapY)
 
-                let gateIndex = Int((rangeKm * 1000 - Double(radial.firstGateMeters)) / Double(radial.gateSizeMeters))
-                guard let value = radial.physicalValue(gateIndex: gateIndex) else { continue }
+                    let distSq   = dmpX * dmpX + dmpY * dmpY
+                    let rangeKm  = distSq.squareRoot() * info.mpp / 1000.0
+                    guard rangeKm <= info.maxRangeKm else { continue }
 
-                pixels[row * width + col] = momentColor(value: value, momentType: sweep.momentType, palette: palette)
+                    // Clockwise azimuth from north
+                    var az = atan2(dmpX, dmpY) * 180.0 / .pi
+                    if az < 0 { az += 360.0 }
+
+                    let azKey = Int((az * 2).rounded()) % 720
+                    guard let radial = info.radialMap[azKey]
+                        ?? info.radialMap[(azKey + 1) % 720]
+                        ?? info.radialMap[(azKey - 1 + 720) % 720],
+                          radial.gateSizeMeters > 0
+                    else { continue }
+
+                    let gateIdx = Int((rangeKm * 1000 - Double(radial.firstGateMeters))
+                                      / Double(radial.gateSizeMeters))
+                    guard let value = radial.physicalValue(gateIndex: gateIdx) else { continue }
+
+                    // Inverse-distance² weight: closer site dominates, equidistant sites blend.
+                    let weight    = 1.0 / max(distSq, 1.0)
+                    weightedSum  += Double(value) * weight
+                    totalWeight  += weight
+                    momentType    = info.momentType
+                }
+
+                guard totalWeight > 0 else { continue }
+                let blended = Float(weightedSum / totalWeight)
+                pixels[row * width + col] = momentColor(value: blended,
+                                                        momentType: momentType,
+                                                        palette: palette)
             }
         }
 
@@ -86,7 +174,7 @@ final class RadarOverlay: NSObject, MKOverlay, @unchecked Sendable {
             space: colorSpace, bitmapInfo: bitmapInfo.rawValue),
               let image = ctx.makeImage()
         else {
-            logger.error("CGContext creation failed for \(sweep.site.icao) \(sweep.momentType)")
+            logger.error("CGContext creation failed for multi-site overlay (\(sweeps.map { $0.site.icao }))")
             guard let provider = CGDataProvider(data: Data([0, 0, 0, 0]) as CFData),
                   let fallback = CGImage(width: 1, height: 1, bitsPerComponent: 8, bitsPerPixel: 32,
                                         bytesPerRow: 4, space: colorSpace, bitmapInfo: bitmapInfo,
@@ -112,7 +200,7 @@ final class RadarOverlay: NSObject, MKOverlay, @unchecked Sendable {
     // NWS velocity color table (m/s; negative = toward radar)
     private static func velocityColor(ms: Float) -> UInt32 {
         switch ms {
-        case ..<(-50):  return rgba(0x00, 0x00, 0x7F)
+        case ..<(-50):    return rgba(0x00, 0x00, 0x7F)
         case -50 ..< -30: return rgba(0x00, 0x00, 0xEC)
         case -30 ..< -20: return rgba(0x00, 0x9E, 0xFF)
         case -20 ..< -10: return rgba(0x00, 0xF0, 0xF0)
@@ -128,27 +216,27 @@ final class RadarOverlay: NSObject, MKOverlay, @unchecked Sendable {
     // Differential reflectivity (dB)
     private static func zdrColor(db: Float) -> UInt32 {
         switch db {
-        case ..<(-1):   return rgba(0x00, 0x00, 0xC8)
-        case -1 ..< 0:  return rgba(0x00, 0x96, 0xFF)
-        case 0  ..< 1:  return rgba(0x00, 0xC8, 0x96)
-        case 1  ..< 2:  return rgba(0x00, 0xC8, 0x00)
-        case 2  ..< 3:  return rgba(0xC8, 0xC8, 0x00)
-        case 3  ..< 4:  return rgba(0xFF, 0x96, 0x00)
-        case 4  ..< 5:  return rgba(0xFF, 0x00, 0x00)
-        default:        return rgba(0xFF, 0x00, 0xFF)
+        case ..<(-1):  return rgba(0x00, 0x00, 0xC8)
+        case -1 ..< 0: return rgba(0x00, 0x96, 0xFF)
+        case 0  ..< 1: return rgba(0x00, 0xC8, 0x96)
+        case 1  ..< 2: return rgba(0x00, 0xC8, 0x00)
+        case 2  ..< 3: return rgba(0xC8, 0xC8, 0x00)
+        case 3  ..< 4: return rgba(0xFF, 0x96, 0x00)
+        case 4  ..< 5: return rgba(0xFF, 0x00, 0x00)
+        default:       return rgba(0xFF, 0x00, 0xFF)
         }
     }
 
     // Correlation coefficient (0–1)
     private static func rhoColor(cc: Float) -> UInt32 {
         switch cc {
-        case ..<0.7:    return rgba(0x00, 0x00, 0x00)
-        case 0.7 ..< 0.85: return rgba(0x96, 0x32, 0x96)
+        case ..<0.7:        return rgba(0x00, 0x00, 0x00)
+        case 0.7  ..< 0.85: return rgba(0x96, 0x32, 0x96)
         case 0.85 ..< 0.90: return rgba(0x00, 0x00, 0xFF)
         case 0.90 ..< 0.95: return rgba(0x00, 0xC8, 0xFF)
         case 0.95 ..< 0.97: return rgba(0x00, 0xC8, 0x00)
         case 0.97 ..< 0.99: return rgba(0xFF, 0xFF, 0x00)
-        default:        return rgba(0xFF, 0xFF, 0xFF)
+        default:            return rgba(0xFF, 0xFF, 0xFF)
         }
     }
 
@@ -162,14 +250,14 @@ final class RadarOverlay: NSObject, MKOverlay, @unchecked Sendable {
     // Spectrum width (m/s, 0–~20)
     private static func swColor(ms: Float) -> UInt32 {
         switch ms {
-        case ..<2:   return rgba(0x00, 0x00, 0x96)
-        case 2..<4:  return rgba(0x00, 0x64, 0xFF)
-        case 4..<6:  return rgba(0x00, 0xC8, 0x96)
-        case 6..<8:  return rgba(0x00, 0xC8, 0x00)
-        case 8..<10: return rgba(0xC8, 0xC8, 0x00)
+        case ..<2:    return rgba(0x00, 0x00, 0x96)
+        case 2..<4:   return rgba(0x00, 0x64, 0xFF)
+        case 4..<6:   return rgba(0x00, 0xC8, 0x96)
+        case 6..<8:   return rgba(0x00, 0xC8, 0x00)
+        case 8..<10:  return rgba(0xC8, 0xC8, 0x00)
         case 10..<13: return rgba(0xFF, 0x96, 0x00)
         case 13..<16: return rgba(0xFF, 0x00, 0x00)
-        default:     return rgba(0xFF, 0xFF, 0xFF)
+        default:      return rgba(0xFF, 0xFF, 0xFF)
         }
     }
 

@@ -51,10 +51,20 @@ struct MainMapView: NSViewRepresentable {
         }
 
         // ── Radar sweep (Level 2) ──────────────────────────────────────
-        map.removeOverlays(map.overlays.filter { $0 is RadarOverlay })
-        if !appState.selectedProduct.isLevel3, let sweep = appState.currentSweep {
-            map.addOverlay(RadarOverlay(sweep: sweep, palette: appState.colorPalette),
-                           level: .aboveRoads)
+        // Only rebuild the overlay when sweep data or palette actually changes.
+        // Rebuilding on every AppState property change causes visible flashing.
+        let newSweeps = appState.selectedProduct.isLevel3 ? [] : appState.currentSweeps
+        let newKey    = newSweeps
+            .map { "\($0.site.icao)-\(Int($0.scanTime.timeIntervalSince1970))" }
+            .sorted().joined(separator: ",")
+            + "/\(appState.colorPalette)"
+        let existingRadarOverlay = map.overlays.first { $0 is RadarOverlay } as? RadarOverlay
+        if existingRadarOverlay?.sweepKey != newKey {
+            map.removeOverlays(map.overlays.filter { $0 is RadarOverlay })
+            if !newSweeps.isEmpty {
+                map.addOverlay(RadarOverlay(sweeps: newSweeps, palette: appState.colorPalette),
+                               level: .aboveRoads)
+            }
         }
 
         // ── Radar sweep (Level 3) ──────────────────────────────────────
@@ -102,10 +112,11 @@ struct MainMapView: NSViewRepresentable {
         // ── Range rings ────────────────────────────────────────────────
         map.removeOverlays(map.overlays.filter { $0 is RangeRingOverlay })
         if appState.showRangeRings {
-            let center = appState.selectedSite.coordinate
-            for km in [50.0, 100.0, 150.0, 230.0] {
-                map.addOverlay(RangeRingOverlay.make(center: center, distanceKm: km),
-                               level: .aboveRoads)
+            for site in appState.selectedSites {
+                for km in [50.0, 100.0, 150.0, 230.0] {
+                    map.addOverlay(RangeRingOverlay.make(center: site.coordinate, distanceKm: km),
+                                   level: .aboveRoads)
+                }
             }
         }
 

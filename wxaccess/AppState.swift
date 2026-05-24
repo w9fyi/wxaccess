@@ -7,9 +7,24 @@ import AppKit
 @Observable
 @MainActor
 final class AppState: NSObject {
-    var selectedSite: NEXRADSite = NEXRADSiteCatalog.site(icao: "KEWX") ?? NEXRADSiteCatalog.all[0]
+    // MARK: - Site selection (multi-site)
+    // selectedSites is the ordered list of selected sites; selectedSite is the primary.
+    var selectedSites: [NEXRADSite] = [NEXRADSiteCatalog.site(icao: "KEWX") ?? NEXRADSiteCatalog.all[0]]
+    var selectedSite: NEXRADSite { selectedSites.first ?? NEXRADSiteCatalog.all[0] }
+
+    func toggleSite(_ site: NEXRADSite) {
+        if let idx = selectedSites.firstIndex(of: site) {
+            guard selectedSites.count > 1 else { return }  // always keep at least one
+            selectedSites.remove(at: idx)
+        } else {
+            selectedSites.append(site)
+        }
+    }
+
     var selectedProduct: RadarProduct = .reflectivity
-    var currentSweep: RadarSweep?
+    // currentSweeps holds one sweep per selected site. currentSweep is the primary (first).
+    var currentSweeps: [RadarSweep] = []
+    var currentSweep: RadarSweep? { currentSweeps.first }
     var availableScans: [ScanEntry] = []
     var selectedScan: ScanEntry?
     var alerts: [NWSAlert] = []
@@ -44,7 +59,7 @@ final class AppState: NSObject {
     var stormCells: [StormCell] = []
     var showStormCells: Bool = false
 
-    // MARK: - Animation
+    // MARK: - Animation (primary site only)
     var isAnimating: Bool = false
     var animationFrames: [RadarSweep] = []
     var animationLevel3Frames: [Level3RadialSweep] = []
@@ -72,6 +87,7 @@ final class AppState: NSObject {
     // MARK: - Notifications
     private var notifiedAlertIDs: Set<String> = []
 
+    // All tilts from the latest primary-site scan (used for tilt browsing).
     private var allSweeps: [RadarSweep] = []
 
     // MARK: - Location
@@ -93,6 +109,11 @@ final class AppState: NSObject {
             let frame = "\(animationFrameIndex + 1)/\(animationFrames.count)"
             return "\(sweep.site.icao) \(selectedProduct.displayName) \(String(format: "%.1f", sweep.elevationAngle))° — frame \(frame) \(sweep.scanTime.formatted(date: .omitted, time: .shortened)) UTC"
         }
+        if currentSweeps.count > 1 {
+            let names = currentSweeps.map { $0.site.icao }.joined(separator: ", ")
+            let time = currentSweeps.first.map { $0.scanTime.formatted(date: .omitted, time: .shortened) } ?? ""
+            return "\(names) — \(time) UTC"
+        }
         if let sweep = currentSweep {
             return "\(sweep.site.icao) \(selectedProduct.displayName) \(String(format: "%.1f", sweep.elevationAngle))° — \(sweep.scanTime.formatted(date: .omitted, time: .shortened))"
         }
@@ -104,29 +125,71 @@ final class AppState: NSObject {
     func refresh() async {
         isLoading = true
         errorMessage = nil
-        level3Sweep = nil  // stale on every full refresh
+        // Old sweeps remain visible during fetch for stable display.
         do {
-            async let scans    = Level2Fetcher.shared.listScans(site: selectedSite, date: selectedDate)
-            async let alerts   = AlertsFetcher.shared.fetchAlerts(near: selectedSite.coordinate)
-            async let outlooks = SPCOutlookFetcher.shared.fetchOutlooks()
-            async let mds      = SPCMesoscaleDiscussionFetcher.shared.fetchDiscussions()
-            async let reports  = SPCStormReportFetcher.shared.fetchReports()
-            async let obs      = SurfaceObsFetcher.shared.fetchObs(near: selectedSite)
-            async let pfiles   = PlacefileFetcher.shared.refresh(existing: placefiles, urls: placefileURLs)
-            async let cells    = SCITFetcher.shared.fetchLatest(site: selectedSite)
+            async let alertsTask   = AlertsFetcher.shared.fetchAlerts(near: selectedSite.coordinate)
+            async let outlooksTask = SPCOutlookFetcher.shared.fetchOutlooks()
+            async let mdsTask      = SPCMesoscaleDiscussionFetcher.shared.fetchDiscussions()
+            async let reportsTask  = SPCStormReportFetcher.shared.fetchReports()
+            async let obsTask      = SurfaceObsFetcher.shared.fetchObs(near: selectedSite)
+            async let pfilesTask   = PlacefileFetcher.shared.refresh(existing: placefiles, urls: placefileURLs)
+            async let cellsTask    = SCITFetcher.shared.fetchLatest(site: selectedSite)
 
-            availableScans = try await scans
-            if let latest = availableScans.first {
-                await loadScan(latest)
+            // Fetch radar data for all selected sites concurrently.
+            let capturedSites = selectedSites
+            let capturedDate  = selectedDate
+            let capturedTilt  = tiltAngle(for: tiltIndex)
+            let capturedProd  = selectedProduct.rawValue
+
+            var fetchedSweeps: [Int: RadarSweep] = [:]
+            var primaryScans:  [ScanEntry]       = []
+            var primaryAllSweeps: [RadarSweep]   = []
+
+            await withTaskGroup(of: (Int, [RadarSweep], [ScanEntry]).self) { group in
+                for (idx, site) in capturedSites.enumerated() {
+                    group.addTask {
+                        guard let scans = try? await Level2Fetcher.shared.listScans(site: site, date: capturedDate),
+                              !scans.isEmpty
+                        else { return (idx, [], []) }
+                        guard let data = try? await Level2Fetcher.shared.download(entry: scans[0])
+                        else { return (idx, [], idx == 0 ? scans : []) }
+                        let sweeps = (try? Level2Decoder().decode(data: data)) ?? []
+                        return (idx, sweeps, idx == 0 ? scans : [])
+                    }
+                }
+                for await (idx, sweeps, scans) in group {
+                    if idx == 0 {
+                        primaryScans     = scans
+                        primaryAllSweeps = sweeps
+                    }
+                    let sweep = sweeps.first { $0.momentType == capturedProd && abs($0.elevationAngle - capturedTilt) < 0.5 }
+                        ?? sweeps.first { $0.momentType == capturedProd }
+                        ?? sweeps.first
+                    if let s = sweep { fetchedSweeps[idx] = s }
+                }
             }
-            self.alerts                = try await alerts
-            self.outlooks              = await outlooks
-            self.mesoscaleDiscussions  = await mds
-            self.stormReports          = await reports
-            self.surfaceObs            = await obs
-            self.placefiles            = await pfiles
-            self.stormCells            = (try? await cells) ?? []
 
+            // Atomic display update — only change what's shown when new data is ready.
+            availableScans = primaryScans
+            selectedScan   = primaryScans.first
+            allSweeps      = primaryAllSweeps
+
+            let newSweeps = capturedSites.indices.compactMap { fetchedSweeps[$0] }
+            if !newSweeps.isEmpty { currentSweeps = newSweeps }
+
+            if let sweep = currentSweeps.first {
+                let msg = "Radar loaded: \(sweep.site.displayName), \(selectedProduct.displayName)"
+                NSAccessibility.post(element: NSApp as AnyObject, notification: .announcementRequested,
+                                     userInfo: [NSAccessibility.NotificationUserInfoKey.announcement: msg])
+            }
+
+            self.alerts               = try await alertsTask
+            self.outlooks             = await outlooksTask
+            self.mesoscaleDiscussions = await mdsTask
+            self.stormReports         = await reportsTask
+            self.surfaceObs           = await obsTask
+            self.placefiles           = await pfilesTask
+            self.stormCells           = (try? await cellsTask) ?? []
             notifyNewAlerts(self.alerts)
         } catch {
             errorMessage = error.localizedDescription
@@ -135,9 +198,11 @@ final class AppState: NSObject {
         scheduleAutoRefresh()
     }
 
+    // Loads a specific scan entry (user-selected from the scan list).
+    // Only affects the primary site; secondary sites keep their existing sweeps.
     func loadScan(_ entry: ScanEntry) async {
         selectedScan = entry
-        isLoading = true
+        isLoading    = true
         errorMessage = nil
         do {
             let data = try await Level2Fetcher.shared.download(entry: entry)
@@ -156,13 +221,21 @@ final class AppState: NSObject {
         isLoading = false
     }
 
+    // Picks the sweep from allSweeps that best matches the current product and tilt,
+    // then stores it as currentSweeps[0] without disturbing secondary-site sweeps.
     func selectCurrentSweep() {
         let target  = tiltAngle(for: tiltIndex)
         let product = selectedProduct.rawValue
-        currentSweep =
-            allSweeps.first { $0.momentType == product && abs($0.elevationAngle - target) < 0.5 }
-            ?? allSweeps.first { $0.momentType == product }
-            ?? allSweeps.first
+        let best    = allSweeps.first { $0.momentType == product && abs($0.elevationAngle - target) < 0.5 }
+                   ?? allSweeps.first { $0.momentType == product }
+                   ?? allSweeps.first
+        guard let sweep = best else { return }
+
+        if currentSweeps.isEmpty {
+            currentSweeps = [sweep]
+        } else {
+            currentSweeps[0] = sweep
+        }
     }
 
     // MARK: - Level 3 products
@@ -170,23 +243,21 @@ final class AppState: NSObject {
     func loadLevel3Product(_ product: RadarProduct) async {
         guard let code = product.level3ProductCode else { return }
         isLoadingLevel3 = true
-        errorMessage = nil
+        errorMessage    = nil
         do {
             let entries = try await Level3Fetcher.shared.listScans(site: selectedSite,
                                                                     product: code, limit: 1)
-            guard let entry = entries.first else {
-                throw URLError(.fileDoesNotExist)
-            }
-            let data   = try await Level3Fetcher.shared.download(entry: entry)
-            level3Sweep = try Level3Decoder().decode(data: data, site: selectedSite, product: code)
+            guard let entry = entries.first else { throw URLError(.fileDoesNotExist) }
+            let data     = try await Level3Fetcher.shared.download(entry: entry)
+            level3Sweep  = try Level3Decoder().decode(data: data, site: selectedSite, product: code)
         } catch {
             errorMessage = error.localizedDescription
-            level3Sweep = nil
+            level3Sweep  = nil
         }
         isLoadingLevel3 = false
     }
 
-    // MARK: - Animation
+    // MARK: - Animation (primary site only)
 
     func toggleAnimation() async {
         if isAnimating { stopAnimation() } else { await startAnimation() }
@@ -219,7 +290,12 @@ final class AppState: NSObject {
                     guard let self else { return }
                     let next = (self.animationFrameIndex + 1) % self.animationFrames.count
                     self.animationFrameIndex = next
-                    self.currentSweep = self.animationFrames[next]
+                    // Update only the primary sweep; secondary sites remain fixed.
+                    if self.currentSweeps.isEmpty {
+                        self.currentSweeps = [self.animationFrames[next]]
+                    } else {
+                        self.currentSweeps[0] = self.animationFrames[next]
+                    }
                     self.announceAnimationFrame(index: next, total: self.animationFrames.count,
                                                 sweep: self.animationFrames[next])
                     try? await Task.sleep(nanoseconds: UInt64(self.animationSpeed.interval * 1_000_000_000))
@@ -231,10 +307,8 @@ final class AppState: NSObject {
     func stopAnimation() {
         animationTask?.cancel()
         animationTask = nil
-        isAnimating = false
-        if selectedProduct.isLevel3 {
-            // level3Sweep is already the last-displayed frame; leave it.
-        } else {
+        isAnimating   = false
+        if !selectedProduct.isLevel3 {
             selectCurrentSweep()
         }
     }
@@ -245,20 +319,24 @@ final class AppState: NSObject {
             level3Sweep = animationLevel3Frames[animationFrameIndex]
         } else if !animationFrames.isEmpty {
             animationFrameIndex = (animationFrameIndex + delta + animationFrames.count) % animationFrames.count
-            currentSweep = animationFrames[animationFrameIndex]
+            if currentSweeps.isEmpty {
+                currentSweeps = [animationFrames[animationFrameIndex]]
+            } else {
+                currentSweeps[0] = animationFrames[animationFrameIndex]
+            }
         }
     }
 
     func clearAnimationFrames() {
         if isAnimating { stopAnimation() }
-        animationFrames = []
-        animationLevel3Frames = []
-        animationFrameIndex = 0
+        animationFrames        = []
+        animationLevel3Frames  = []
+        animationFrameIndex    = 0
     }
 
     private func loadAnimationFrames() async {
         isLoadingAnimation = true
-        errorMessage = nil
+        errorMessage       = nil
         do {
             let scans   = try await Level2Fetcher.shared.listScans(site: selectedSite)
             let recent  = Array(scans.prefix(10).reversed())
@@ -292,7 +370,7 @@ final class AppState: NSObject {
     private func loadLevel3AnimationFrames() async {
         guard let code = selectedProduct.level3ProductCode else { return }
         isLoadingAnimation = true
-        errorMessage = nil
+        errorMessage       = nil
         do {
             let entries = try await Level3Fetcher.shared.listScans(site: selectedSite, product: code, limit: 10)
             let recent  = Array(entries.prefix(10).reversed())
@@ -361,9 +439,9 @@ final class AppState: NSObject {
                 announceProbe(desc)
                 return
             }
-            let phys = radial.physicalValue(gateIndex: gateIdx)
+            let phys   = radial.physicalValue(gateIndex: gateIdx)
             let valStr = phys.map { String(format: "%.1f \(momentUnit(sweep.momentType))", $0) } ?? "No echo"
-            let desc = "\(momentLabel(sweep.momentType)): \(valStr), \(loc)"
+            let desc   = "\(momentLabel(sweep.momentType)): \(valStr), \(loc)"
             probeResult = ProbeResult(coordinate: coordinate, bearing: bearing, rangeKm: rangeKm, description: desc)
             announceProbe(desc)
             return
@@ -375,7 +453,7 @@ final class AppState: NSObject {
             }) else { return }
 
             let binIdx = Int((rangeKm - l3.firstBinKm) / l3.binSizeKm)
-            let loc = "\(cp) \(String(format: "%.0f", rangeKm)) km from \(l3.site.icao)"
+            let loc    = "\(cp) \(String(format: "%.0f", rangeKm)) km from \(l3.site.icao)"
 
             if binIdx < 0 || binIdx >= radial.data.count {
                 let desc = "Outside radar coverage — \(loc)"
@@ -383,9 +461,9 @@ final class AppState: NSObject {
                 announceProbe(desc)
                 return
             }
-            let phys = l3.productCode.physicalValue(code: radial.data[binIdx])
+            let phys   = l3.productCode.physicalValue(code: radial.data[binIdx])
             let valStr = phys.map { String(format: "%.1f \(l3.productCode.physicalUnit)", $0) } ?? "No echo"
-            let desc = "\(l3.productCode.displayName): \(valStr), \(loc)"
+            let desc   = "\(l3.productCode.displayName): \(valStr), \(loc)"
             probeResult = ProbeResult(coordinate: coordinate, bearing: bearing, rangeKm: rangeKm, description: desc)
             announceProbe(desc)
         }
@@ -403,10 +481,10 @@ final class AppState: NSObject {
                                     to pt: CLLocationCoordinate2D) -> (Double, Double) {
         let lat1 = site.latitude  * .pi / 180
         let lat2 = pt.latitude    * .pi / 180
-        let dLon = (pt.longitude - site.longitude) * .pi / 180
-        let dLat = (pt.latitude  - site.latitude)  * .pi / 180
-        let y = sin(dLon) * cos(lat2)
-        let x = cos(lat1) * sin(lat2) - sin(lat1) * cos(lat2) * cos(dLon)
+        let dLon = (pt.longitude  - site.longitude) * .pi / 180
+        let dLat = (pt.latitude   - site.latitude)  * .pi / 180
+        let y    = sin(dLon) * cos(lat2)
+        let x    = cos(lat1) * sin(lat2) - sin(lat1) * cos(lat2) * cos(dLon)
         let bearing = (atan2(y, x) * 180 / .pi + 360).truncatingRemainder(dividingBy: 360)
         let R = 6371.0
         let a = sin(dLat/2)*sin(dLat/2) + cos(lat1)*cos(lat2)*sin(dLon/2)*sin(dLon/2)
@@ -515,8 +593,8 @@ final class AppState: NSObject {
         case .authorizedAlways, .authorized:
             mgr.requestLocation()
         default:
-            isLocating = false
-            errorMessage = "Location access denied. Change in System Settings → Privacy."
+            isLocating    = false
+            errorMessage  = "Location access denied. Change in System Settings → Privacy."
         }
     }
 
@@ -525,7 +603,7 @@ final class AppState: NSObject {
             haversineKm(a.coordinate, coordinate) < haversineKm(b.coordinate, coordinate)
         }
         if let site = nearest {
-            selectedSite = site
+            selectedSites = [site]
             Task { await refresh() }
         }
         isLocating = false
@@ -559,7 +637,7 @@ extension AppState: CLLocationManagerDelegate {
     nonisolated func locationManager(_ manager: CLLocationManager, didFailWithError error: Error) {
         Task { @MainActor in
             self.errorMessage = "Location failed: \(error.localizedDescription)"
-            self.isLocating = false
+            self.isLocating   = false
         }
     }
 
@@ -571,7 +649,7 @@ extension AppState: CLLocationManagerDelegate {
                 self.locationManager?.requestLocation()
             case .denied, .restricted:
                 self.errorMessage = "Location access denied."
-                self.isLocating = false
+                self.isLocating   = false
             default: break
             }
         }
@@ -611,7 +689,6 @@ enum RadarProduct: String, CaseIterable, Identifiable {
         }
     }
 
-    // True for products that come from NEXRAD Level 3 files (not Level 2).
     var isLevel3: Bool {
         switch self {
         case .echoTops, .vil, .stormTotalPrecip, .oneHourPrecip: return true
@@ -619,14 +696,13 @@ enum RadarProduct: String, CaseIterable, Identifiable {
         }
     }
 
-    // Maps a Level 3 radar product to the corresponding Level3ProductCode.
     var level3ProductCode: Level3ProductCode? {
         switch self {
-        case .echoTops:        return .echoTops
-        case .vil:             return .digitalVIL
+        case .echoTops:         return .echoTops
+        case .vil:              return .digitalVIL
         case .stormTotalPrecip: return .stormTotalPrecip
-        case .oneHourPrecip:   return .oneHourPrecip
-        default:               return nil
+        case .oneHourPrecip:    return .oneHourPrecip
+        default:                return nil
         }
     }
 }
