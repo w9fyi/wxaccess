@@ -4,21 +4,20 @@ import CoreLocation
 struct SiteSelectorView: View {
     @Environment(AppState.self) var appState
     @State private var search = ""
-    @State private var selectionId: String? = nil
 
     private var filtered: [NEXRADSite] {
-        guard !search.isEmpty else { return NEXRADSiteCatalog.all }
+        if search.isEmpty { return NEXRADSiteCatalog.all }
         let q = search.lowercased()
-        return NEXRADSiteCatalog.all.filter {
-            $0.icao.lowercased().contains(q)
-            || $0.name.lowercased().contains(q)
-            || $0.state.lowercased().contains(q)
+        return NEXRADSiteCatalog.all.filter { site in
+            let matchIcao  = site.icao.lowercased().contains(q)
+            let matchName  = site.name.lowercased().contains(q)
+            let matchState = site.state.lowercased().contains(q)
+            return matchIcao || matchName || matchState
         }
     }
 
     var body: some View {
         VStack(spacing: 0) {
-            // Nearest-site button
             Button {
                 appState.selectNearestSite()
             } label: {
@@ -43,33 +42,64 @@ struct SiteSelectorView: View {
 
             Divider()
 
-            List(filtered, id: \.id, selection: $selectionId) { site in
-                let isActive = appState.selectedSite.id == site.id
-                Button {
-                    selectionId = site.id
+            // No selection: binding — VoiceOver VO+Space reaches each Button
+            // directly without List row-selection interception.
+            List(filtered, id: \.id) { site in
+                SiteRow(site: site,
+                        isActive: appState.selectedSite.id == site.id) {
                     appState.selectedSite = site
                     Task { await appState.refresh() }
-                } label: {
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(site.icao)
-                            .font(.body.monospaced().weight(.semibold))
-                        Text(site.name + ", " + site.state)
-                            .font(.caption).foregroundStyle(.secondary)
-                    }
                 }
-                .buttonStyle(.plain)
-                .accessibilityLabel(isActive
-                    ? "\(site.displayName), currently loaded"
-                    : site.displayName)
-                .accessibilityAddTraits(isActive ? [.isButton, .isSelected] : .isButton)
-                .accessibilityHint(isActive ? "" : "Load radar data for this site")
             }
             .searchable(text: $search, prompt: "ICAO, city, or state")
         }
         .navigationTitle("Radar Sites")
-        .onAppear { selectionId = appState.selectedSite.id }
-        .onChange(of: appState.selectedSite.id) { _, newId in
-            selectionId = newId
+    }
+}
+
+// MARK: - Row
+
+private struct SiteRow: View {
+    let site: NEXRADSite
+    let isActive: Bool
+    let onSelect: () -> Void
+
+    private var rowBackground: Color {
+        isActive ? Color.accentColor.opacity(0.15) : Color.clear
+    }
+    private var a11yLabel: String {
+        isActive ? "\(site.displayName), currently loaded" : site.displayName
+    }
+    private var a11yHint: String {
+        isActive ? "" : "Load radar data for this site"
+    }
+    private var a11yTraits: AccessibilityTraits {
+        var t: AccessibilityTraits = [.isButton]
+        if isActive { t.insert(.isSelected) }
+        return t
+    }
+
+    var body: some View {
+        Button(action: onSelect) {
+            HStack {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(site.icao)
+                        .font(.body.monospaced().weight(.semibold))
+                    Text(site.name + ", " + site.state)
+                        .font(.caption).foregroundStyle(.secondary)
+                }
+                Spacer()
+                if isActive {
+                    Image(systemName: "checkmark")
+                        .foregroundStyle(Color.accentColor)
+                        .accessibilityHidden(true)
+                }
+            }
         }
+        .buttonStyle(.plain)
+        .listRowBackground(rowBackground)
+        .accessibilityLabel(a11yLabel)
+        .accessibilityAddTraits(a11yTraits)
+        .accessibilityHint(a11yHint)
     }
 }
