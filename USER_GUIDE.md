@@ -27,15 +27,16 @@ This guide walks you from installation through every feature, with plain-English
 13. [SPC Convective Outlooks](#spc-convective-outlooks)
 14. [SPC Mesoscale Discussions](#spc-mesoscale-discussions)
 15. [SPC Storm Reports](#spc-storm-reports)
-16. [Surface Observations](#surface-observations)
-17. [Satellite Imagery](#satellite-imagery)
-18. [Model and Analysis Layers](#model-and-analysis-layers)
-19. [Custom Placefiles](#custom-placefiles)
-20. [Sonification](#sonification)
-21. [Accessibility Panel Reference](#accessibility-panel-reference)
-22. [Settings and Preferences](#settings-and-preferences)
-23. [Keyboard Shortcuts](#keyboard-shortcuts)
-24. [Data Sources](#data-sources)
+16. [Storm Cells (SCIT)](#storm-cells-scit)
+17. [Surface Observations](#surface-observations)
+18. [Satellite Imagery](#satellite-imagery)
+19. [Model and Analysis Layers](#model-and-analysis-layers)
+20. [Custom Placefiles](#custom-placefiles)
+21. [Sonification](#sonification)
+22. [Accessibility Panel Reference](#accessibility-panel-reference)
+23. [Settings and Preferences](#settings-and-preferences)
+24. [Keyboard Shortcuts](#keyboard-shortcuts)
+25. [Data Sources](#data-sources)
 
 ---
 
@@ -489,6 +490,66 @@ The Data Summary panel shows a count of each type: "3 tornado, 5 hail, 2 wind" f
 
 ---
 
+## Storm Cells (SCIT)
+
+Storm Cell Identification and Tracking (SCIT) is an NWS algorithm that automatically locates individual convective cells in the radar volume, assigns each one a two-character identifier, and calculates where each cell has been and where it is likely to go.
+
+wxaccess fetches the SCIT output from the NEXRAD Level 3 NST (Storm Tracking Information) product, which is updated every radar volume scan — approximately every 5 minutes.
+
+### What the overlay shows
+
+Enable **Overlays → Storm Cells** to display three types of information:
+
+**Orange markers** — One marker per identified storm cell. The marker's glyph shows the cell's two-character identifier (e.g., "K2", "A1"). Cell IDs are assigned by the NWS algorithm and persist as long as the cell remains trackable; a new or merged cell gets a new ID.
+
+**White dashed lines** — The cell's past track, drawn from its oldest known position to its current location. The dashes give you an immediate visual read of where the storm came from and how fast it has been moving.
+
+**Orange dotted lines** — The SCIT algorithm's forecast track, showing where the cell is expected to be in approximately 30 and 60 minutes, based on its recent motion vector.
+
+### What the numbers mean
+
+| Field | Description |
+|---|---|
+| Cell ID | Two-character NWS identifier, e.g. "A2" |
+| Bearing from radar | Compass direction from the radar site to the cell |
+| Range from radar | Distance in km from the radar antenna |
+| Motion direction | Where the cell is heading (compass direction) |
+| Motion speed | Estimated speed in km/h, derived from current→forecast vector |
+
+### How the algorithm works
+
+The SCIT algorithm runs inside the NWS radar product generator (RPG) after each volume scan. It identifies regions of reflectivity exceeding an internal threshold, computes each region's centroid, and attempts to match centroids from scan to scan to form continuous tracks. Cells that cannot be matched between consecutive scans are treated as new cells and assigned a fresh ID.
+
+Because SCIT relies on centroid matching, it works best on well-organized, discrete convective cells (supercells, organized multicell clusters). It is less reliable for widespread stratiform rain, fast-evolving storm clusters, or cells near the edges of the radar's coverage area.
+
+### VoiceOver and keyboard access
+
+The Data Summary panel → **Storm Cells** section lists every tracked cell with a plain-English description. Example:
+
+> *Cell K2: NNE 216 km from radar, moving NNW at 12 km/h*
+
+When Storm Cells is enabled and data is loaded, the panel shows:
+
+- Total number of cells being tracked
+- For each cell (up to 5): ID, bearing and range from the radar, and motion direction and speed
+- If more than 5 cells are tracked, a count of the remaining cells
+
+Each orange map marker is fully labeled for VoiceOver — pressing VO+Space on a marker announces the same description as the Data Summary panel.
+
+### Limitations and what SCIT cannot tell you
+
+SCIT tells you **where cells are and where they are going**, but it does not tell you:
+
+- **Severity** — A cell tracked by SCIT may be anything from a 20 dBZ rain shower to a 70 dBZ supercell. Always check the radar reflectivity and velocity to assess intensity.
+- **Tornado potential** — SCIT does not indicate rotation. Use the Velocity (VEL) product and check for NWS Tornado Warnings for that information.
+- **Exact future location** — The forecast track is a linear extrapolation of recent motion. Cells that turn, accelerate, or merge will deviate from the forecast.
+
+SCIT data is only available when the NST product is present on the THREDDS server for the selected site and date. Quiet-weather days with no organized convection will show zero tracked cells, which is correct — no cells means no tracked cells.
+
+> **Try it now:** Switch to a site in an area with active thunderstorms (check Overlays → Storm Reports to find a region with current hail or tornado reports). Enable Overlays → Storm Cells. Orange markers will appear over any cells the SCIT algorithm has identified. Open the Data Summary panel and navigate to Storm Cells — VoiceOver will read each cell's range and motion direction. Tap a marker on the map to hear a full description of that individual cell.
+
+---
+
 ## Surface Observations
 
 wxaccess overlays METAR surface observations from thousands of aviation weather stations, color-coded by flight category. This gives you an instant picture of low-level visibility and ceiling conditions across a region.
@@ -664,6 +725,7 @@ The Data Summary panel at the bottom of the window presents all data in plain te
 | **SPC Outlooks** | Highest risk category for Day 1, Day 2, Day 3 |
 | **Mesoscale Discussions** | Count and text summary of each active MD |
 | **Storm Reports** | Counts by type; details of each tornado, hail, and wind report |
+| **Storm Cells** | Total tracked cells; per-cell bearing, range, and motion direction/speed (up to 5) |
 | **Surface Observations** | Flight category summary; individual station data |
 | **Model Layer** | Active model/product and forecast offset |
 | **Satellite** | Active satellite channel and update time |
@@ -736,8 +798,8 @@ All data used by wxaccess is free and requires no registration or API key.
 
 | Source | URL | What is fetched |
 |---|---|---|
-| NOAA NEXRAD Level 2 | `noaa-nexrad-level2.s3.amazonaws.com` | Raw radar sweeps (Archive II format) |
-| Unidata NEXRAD Level 3 | `unidata-nexrad-level3.s3.amazonaws.com` | Processed Level 3 products |
+| Unidata THREDDS (Level 2) | `thredds.ucar.edu` | Raw radar sweeps (Archive II format), 7-day rolling window |
+| Unidata THREDDS (Level 3) | `thredds.ucar.edu` | Processed Level 3 products including NST storm cells, 14-day rolling window |
 | NWS Alerts | `api.weather.gov` | Active watches, warnings, and advisories |
 | Aviation Weather | `aviationweather.gov` | METAR surface observations |
 | SPC | `spc.noaa.gov` | Convective outlooks, mesoscale discussions, storm reports |
