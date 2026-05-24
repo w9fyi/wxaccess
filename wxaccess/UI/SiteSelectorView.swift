@@ -44,24 +44,26 @@ struct SiteSelectorView: View {
             Divider()
 
             List(filtered, id: \.id, selection: $selectionId) { site in
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(site.icao)
-                        .font(.body.monospaced().weight(.semibold))
-                    Text(site.name + ", " + site.state)
-                        .font(.caption).foregroundStyle(.secondary)
+                Button {
+                    selectionId = site.id
+                    appState.selectedSite = site
+                    Task { await appState.refresh() }
+                } label: {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(site.icao)
+                            .font(.body.monospaced().weight(.semibold))
+                        Text(site.name + ", " + site.state)
+                            .font(.caption).foregroundStyle(.secondary)
+                    }
                 }
-                .accessibilityElement(children: .combine)
+                .buttonStyle(.plain)
                 .accessibilityLabel(site.displayName)
+                .accessibilityAddTraits(.isButton)
+                .accessibilityHint("Load radar data for this site")
             }
             .searchable(text: $search, prompt: "ICAO, city, or state")
         }
         .navigationTitle("Radar Sites")
         .onAppear { selectionId = appState.selectedSite.id }
-        .onChange(of: selectionId) { _, newId in
-            guard let id = newId,
-                  let site = NEXRADSiteCatalog.site(icao: id) else { return }
-            appState.selectedSite = site
-            Task { await appState.refresh() }
-        }
     }
 }
