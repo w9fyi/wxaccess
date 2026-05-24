@@ -32,6 +32,8 @@ final class AppState: NSObject {
     var isLoading: Bool = false
     var errorMessage: String?
     var showAbout: Bool = false
+    var showBugReport: Bool = false
+    var bugReportURL: URL? = nil
     var tiltIndex: Int = 0
     var showSatellite: Bool = false
     var satelliteProduct: GOESSatelliteProduct = .infrared

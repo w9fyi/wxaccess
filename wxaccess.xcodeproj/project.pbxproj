@@ -35,12 +35,16 @@
 		5F4A4B53AC342321FA32E18B /* SPCOutlookFetcher.swift in Sources */ = {isa = PBXBuildFile; fileRef = FF2203BA2FDEE3A247DA70C9 /* SPCOutlookFetcher.swift */; };
 		6F516CADA92787F27FB09F24 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 26E840973061D86145DD5F26 /* Assets.xcassets */; };
 		7195CC4A6A8D87863DE1F17C /* Level3Decoder.swift in Sources */ = {isa = PBXBuildFile; fileRef = F32ED9BBB435BCD8D089F59E /* Level3Decoder.swift */; };
+		72230CDE677C7F1906AC31A3 /* SCITDecoder.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E6E72C78085563B618BC420 /* SCITDecoder.swift */; };
 		75F2DAE56D5C9F957026DBC5 /* NEXRADSiteCatalog.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D5F0D56471C314E99C70706 /* NEXRADSiteCatalog.swift */; };
 		7703509DE64D27458A86FB94 /* ColorPalette.swift in Sources */ = {isa = PBXBuildFile; fileRef = 041E7FCA761E70E137714D9F /* ColorPalette.swift */; };
+		7BA6C1A51C50736101FB3EAF /* SCITFetcher.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4580BF2CB3A828D1D7628CD0 /* SCITFetcher.swift */; };
 		7F5DAEE1E82F55CD465FBD09 /* RadarOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = 86DC8FB10C37E09FACFBCBF1 /* RadarOverlay.swift */; };
+		922428955A4CB74E1B74B63B /* Security.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 6E6A79F71303EEAA397043DB /* Security.framework */; };
 		931E4F3F891E364B7E081D6B /* GOESSatellite.swift in Sources */ = {isa = PBXBuildFile; fileRef = C6EBAB21A51A54ED86D7CDE4 /* GOESSatellite.swift */; };
 		9B314463B74B9319FB671B90 /* KEWX_N0Q_sample.bin in Resources */ = {isa = PBXBuildFile; fileRef = 94245EDBD0585BDDA7F3B2DC /* KEWX_N0Q_sample.bin */; };
 		A0466ABE11A061D76CC3C836 /* SPCMesoscaleDiscussion.swift in Sources */ = {isa = PBXBuildFile; fileRef = BC344B22D5131C3838E0CFB2 /* SPCMesoscaleDiscussion.swift */; };
+		A3776189C5B84BF0B14EF8D6 /* BugReporter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8888E9E0F9A67E87B2045944 /* BugReporter.swift */; };
 		A451B5AD544B0411470B4339 /* RadarSweep.swift in Sources */ = {isa = PBXBuildFile; fileRef = B915F3EAA36E55DC60390310 /* RadarSweep.swift */; };
 		A9A7E24DE89CA1A8D3CE2744 /* Metal.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C24BB8840C928CFD79CDF18A /* Metal.framework */; };
 		BCD07AEE103081564D631B2A /* SiteSelectorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0DC84FC294FDD222CF45512D /* SiteSelectorView.swift */; };
@@ -53,14 +57,13 @@
 		E7F50620A96B0A8C460FD89C /* Level3Overlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = F9EF073F893F69173F8EB595 /* Level3Overlay.swift */; };
 		E92C1843A0DC41B2C17B09C1 /* ColorScaleLegendView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FC17D60D7002C8D4114F67E7 /* ColorScaleLegendView.swift */; };
 		E92D8DCD1413A302C0BADD02 /* AlertsFetcher.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8FD09472CB4EFB7A8C255B2C /* AlertsFetcher.swift */; };
+		EC04641C832281ED99649D15 /* StormCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = DDE178F6468448D77C9C94EF /* StormCell.swift */; };
 		EC0FFE4551271DB962FA5E40 /* Accelerate.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C60CBAB7FF9FF69F7D434E92 /* Accelerate.framework */; };
+		F03470221FF671DDFEFC1EFD /* BugReportView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B6DAC35AD931C56D13F02B51 /* BugReportView.swift */; };
 		F6A4BF4BF4A6140F78DA77E3 /* CoreLocation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 1ED75C48DFF59C71AAE6E419 /* CoreLocation.framework */; };
 		F81289F371DC8B22EDC87E8B /* Level3DecoderTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 43AE73BD7F74847050E8D860 /* Level3DecoderTests.swift */; };
 		F892BB1F16A70A37A2A0F5D6 /* AboutView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 736FAF014EC4E04E3C14AE60 /* AboutView.swift */; };
 		F968F1732A1C3A4145267911 /* Level2Fetcher.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2C18764F1DCBEF307380CCD3 /* Level2Fetcher.swift */; };
-		DD44EF6A7B8C9D0E1F2A3B4C /* StormCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA11BC3D4E5F6A7B8C9D0E1F /* StormCell.swift */; };
-		EE55FA7B8C9D0E1F2A3B4C5D /* SCITDecoder.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB22CD4E5F6A7B8C9D0E1F2A /* SCITDecoder.swift */; };
-		FF66AB8C9D0E1F2A3B4C5D6E /* SCITFetcher.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC33DE5F6A7B8C9D0E1F2A3B /* SCITFetcher.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -96,20 +99,25 @@
 		421E3676C5D9EE89E6CC67FF /* wxaccess.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = wxaccess.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		43AE73BD7F74847050E8D860 /* Level3DecoderTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Level3DecoderTests.swift; sourceTree = "<group>"; };
 		455EC768D1EAF8C52624C5EE /* MapKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = MapKit.framework; path = System/Library/Frameworks/MapKit.framework; sourceTree = SDKROOT; };
+		4580BF2CB3A828D1D7628CD0 /* SCITFetcher.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SCITFetcher.swift; sourceTree = "<group>"; };
 		45C60E334894748D9F08C7A9 /* PlacefileItem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlacefileItem.swift; sourceTree = "<group>"; };
 		59334D613BCD5C073272F244 /* Level3Fetcher.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Level3Fetcher.swift; sourceTree = "<group>"; };
 		5EFCAD7E1B9EB0475824871B /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		60BF9207AD39DC5C38BFBA20 /* wxaccessApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = wxaccessApp.swift; sourceTree = "<group>"; };
+		6E6A79F71303EEAA397043DB /* Security.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Security.framework; path = System/Library/Frameworks/Security.framework; sourceTree = SDKROOT; };
 		736FAF014EC4E04E3C14AE60 /* AboutView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AboutView.swift; sourceTree = "<group>"; };
 		7975246609DBC8DAA77EDF86 /* wxaccess.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = wxaccess.entitlements; sourceTree = "<group>"; };
 		7C4CA5D27C8807716E8DF36C /* MainMapView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainMapView.swift; sourceTree = "<group>"; };
 		7D5F0D56471C314E99C70706 /* NEXRADSiteCatalog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NEXRADSiteCatalog.swift; sourceTree = "<group>"; };
+		7E6E72C78085563B618BC420 /* SCITDecoder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SCITDecoder.swift; sourceTree = "<group>"; };
 		86DC8FB10C37E09FACFBCBF1 /* RadarOverlay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RadarOverlay.swift; sourceTree = "<group>"; };
 		87B262EF5493BDDF6F9392A6 /* MetalKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = MetalKit.framework; path = System/Library/Frameworks/MetalKit.framework; sourceTree = SDKROOT; };
+		8888E9E0F9A67E87B2045944 /* BugReporter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BugReporter.swift; sourceTree = "<group>"; };
 		8FD09472CB4EFB7A8C255B2C /* AlertsFetcher.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AlertsFetcher.swift; sourceTree = "<group>"; };
 		94245EDBD0585BDDA7F3B2DC /* KEWX_N0Q_sample.bin */ = {isa = PBXFileReference; lastKnownFileType = archive.macbinary; path = KEWX_N0Q_sample.bin; sourceTree = "<group>"; };
 		A6463C51099133F9F325BDFA /* SPCMesoscaleDiscussionFetcher.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SPCMesoscaleDiscussionFetcher.swift; sourceTree = "<group>"; };
 		AB8CBCB7157CC4A4ED061BDA /* NWSAlert.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NWSAlert.swift; sourceTree = "<group>"; };
+		B6DAC35AD931C56D13F02B51 /* BugReportView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BugReportView.swift; sourceTree = "<group>"; };
 		B915F3EAA36E55DC60390310 /* RadarSweep.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RadarSweep.swift; sourceTree = "<group>"; };
 		BA62D152A9D9F579E8DC616F /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		BC344B22D5131C3838E0CFB2 /* SPCMesoscaleDiscussion.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SPCMesoscaleDiscussion.swift; sourceTree = "<group>"; };
@@ -118,6 +126,7 @@
 		C3848FBF33446F273D1047B3 /* KEWX_sample.bin */ = {isa = PBXFileReference; lastKnownFileType = archive.macbinary; path = KEWX_sample.bin; sourceTree = "<group>"; };
 		C60CBAB7FF9FF69F7D434E92 /* Accelerate.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Accelerate.framework; path = System/Library/Frameworks/Accelerate.framework; sourceTree = SDKROOT; };
 		C6EBAB21A51A54ED86D7CDE4 /* GOESSatellite.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GOESSatellite.swift; sourceTree = "<group>"; };
+		DDE178F6468448D77C9C94EF /* StormCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StormCell.swift; sourceTree = "<group>"; };
 		DF6CD7BFC88BD0959AD663C3 /* AlertsListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AlertsListView.swift; sourceTree = "<group>"; };
 		E1432C2C1AF737BCA004E69F /* SonificationEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SonificationEngine.swift; sourceTree = "<group>"; };
 		EA731DF4FD29FDAB2E1CADBE /* SPCOutlook.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SPCOutlook.swift; sourceTree = "<group>"; };
@@ -130,9 +139,6 @@
 		FC17D60D7002C8D4114F67E7 /* ColorScaleLegendView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ColorScaleLegendView.swift; sourceTree = "<group>"; };
 		FCF4BA2C2AAE815E0BD68F5B /* PlacefileFetcher.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlacefileFetcher.swift; sourceTree = "<group>"; };
 		FF2203BA2FDEE3A247DA70C9 /* SPCOutlookFetcher.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SPCOutlookFetcher.swift; sourceTree = "<group>"; };
-		AA11BC3D4E5F6A7B8C9D0E1F /* StormCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StormCell.swift; sourceTree = "<group>"; };
-		BB22CD4E5F6A7B8C9D0E1F2A /* SCITDecoder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SCITDecoder.swift; sourceTree = "<group>"; };
-		CC33DE5F6A7B8C9D0E1F2A3B /* SCITFetcher.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SCITFetcher.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -147,6 +153,7 @@
 				EC0FFE4551271DB962FA5E40 /* Accelerate.framework in Frameworks */,
 				5E78F9F83A435329C248817D /* UserNotifications.framework in Frameworks */,
 				C51DC9A4E8384C5EDAA73735 /* AVFoundation.framework in Frameworks */,
+				922428955A4CB74E1B74B63B /* Security.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -221,6 +228,7 @@
 				7975246609DBC8DAA77EDF86 /* wxaccess.entitlements */,
 				60BF9207AD39DC5C38BFBA20 /* wxaccessApp.swift */,
 				353C99E0C57E059797B84152 /* Audio */,
+				BCC403679FD0750FCB3B6C28 /* Bug */,
 				4E8B125EDB5DA746CC56531C /* GOES */,
 				6F3C277A64DF6D137B6A4372 /* Map */,
 				34A7E22DD03FE35132E505E1 /* Model */,
@@ -288,6 +296,7 @@
 				455EC768D1EAF8C52624C5EE /* MapKit.framework */,
 				C24BB8840C928CFD79CDF18A /* Metal.framework */,
 				87B262EF5493BDDF6F9392A6 /* MetalKit.framework */,
+				6E6A79F71303EEAA397043DB /* Security.framework */,
 				23A16A8C8B08A23A79E8F316 /* UserNotifications.framework */,
 			);
 			name = Frameworks;
@@ -305,11 +314,20 @@
 				F4B2427136256697F4C94293 /* NEXRADSite.swift */,
 				7D5F0D56471C314E99C70706 /* NEXRADSiteCatalog.swift */,
 				B915F3EAA36E55DC60390310 /* RadarSweep.swift */,
-				AA11BC3D4E5F6A7B8C9D0E1F /* StormCell.swift */,
-				BB22CD4E5F6A7B8C9D0E1F2A /* SCITDecoder.swift */,
-				CC33DE5F6A7B8C9D0E1F2A3B /* SCITFetcher.swift */,
+				7E6E72C78085563B618BC420 /* SCITDecoder.swift */,
+				4580BF2CB3A828D1D7628CD0 /* SCITFetcher.swift */,
+				DDE178F6468448D77C9C94EF /* StormCell.swift */,
 			);
 			path = NEXRAD;
+			sourceTree = "<group>";
+		};
+		BCC403679FD0750FCB3B6C28 /* Bug */ = {
+			isa = PBXGroup;
+			children = (
+				8888E9E0F9A67E87B2045944 /* BugReporter.swift */,
+				B6DAC35AD931C56D13F02B51 /* BugReportView.swift */,
+			);
+			path = Bug;
 			sourceTree = "<group>";
 		};
 		CBC7DA709ADF8F178793008A = {
@@ -433,6 +451,8 @@
 				356A40ADED0D2168DC743642 /* AlertsListView.swift in Sources */,
 				17C19C4C0997528E99E12589 /* AppState.swift in Sources */,
 				27B8FAFB3905C9CA6D8B5DE7 /* BZip2Decompressor.swift in Sources */,
+				F03470221FF671DDFEFC1EFD /* BugReportView.swift in Sources */,
+				A3776189C5B84BF0B14EF8D6 /* BugReporter.swift in Sources */,
 				7703509DE64D27458A86FB94 /* ColorPalette.swift in Sources */,
 				E92C1843A0DC41B2C17B09C1 /* ColorScaleLegendView.swift in Sources */,
 				4476CF6E524438296B989325 /* ContentView.swift in Sources */,
@@ -454,9 +474,8 @@
 				7F5DAEE1E82F55CD465FBD09 /* RadarOverlay.swift in Sources */,
 				59F480A0AF5A5FEE5D423C3D /* RadarOverlayRenderer.swift in Sources */,
 				A451B5AD544B0411470B4339 /* RadarSweep.swift in Sources */,
-				DD44EF6A7B8C9D0E1F2A3B4C /* StormCell.swift in Sources */,
-				EE55FA7B8C9D0E1F2A3B4C5D /* SCITDecoder.swift in Sources */,
-				FF66AB8C9D0E1F2A3B4C5D6E /* SCITFetcher.swift in Sources */,
+				72230CDE677C7F1906AC31A3 /* SCITDecoder.swift in Sources */,
+				7BA6C1A51C50736101FB3EAF /* SCITFetcher.swift in Sources */,
 				A0466ABE11A061D76CC3C836 /* SPCMesoscaleDiscussion.swift in Sources */,
 				41234CF71BB5814CC9E13220 /* SPCMesoscaleDiscussionFetcher.swift in Sources */,
 				D95176CA3013C2A13A906B7D /* SPCOutlook.swift in Sources */,
@@ -466,6 +485,7 @@
 				474A2A14F2F5BEFB7D6C16D8 /* SettingsView.swift in Sources */,
 				BCD07AEE103081564D631B2A /* SiteSelectorView.swift in Sources */,
 				22DCACFDD9898965C20AE339 /* SonificationEngine.swift in Sources */,
+				EC04641C832281ED99649D15 /* StormCell.swift in Sources */,
 				DF1FDEAD8E36379A7F7459C1 /* SurfaceObs.swift in Sources */,
 				C2F050FDC6A03CE070C8FFFD /* SurfaceObsFetcher.swift in Sources */,
 				2B8212CC8622C159F04E6A3F /* wxaccessApp.swift in Sources */,

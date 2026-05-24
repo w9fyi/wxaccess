@@ -68,11 +68,22 @@ struct ContentView: View {
                     SatellitePicker()
                     ProductPicker()
                     TiltPicker()
+                    Button {
+                        appState.showBugReport = true
+                    } label: {
+                        Label("File a Bug", systemImage: "ladybug")
+                    }
+                    .accessibilityLabel("File a bug report")
+                    .accessibilityHint("Opens a sheet to report an issue on GitHub")
                 }
             }
         }
         .sheet(isPresented: $state.showAbout) {
             AboutView()
+        }
+        .sheet(isPresented: $state.showBugReport) {
+            BugReportView()
+                .environment(appState)
         }
         .task {
             appState.requestNotificationPermission()

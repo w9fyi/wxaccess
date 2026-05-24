@@ -41,6 +41,7 @@ targets:
       - sdk: Accelerate.framework
       - sdk: UserNotifications.framework
       - sdk: AVFoundation.framework
+      - sdk: Security.framework
 
   wxaccessTests:
     type: bundle.unit-test
