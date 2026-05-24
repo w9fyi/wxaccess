@@ -20,6 +20,28 @@ struct NWSAlert: Sendable, Identifiable, Hashable {
     static func == (lhs: NWSAlert, rhs: NWSAlert) -> Bool { lhs.id == rhs.id }
     func hash(into hasher: inout Hasher) { hasher.combine(id) }
 
+    enum AlertKind: Sendable {
+        case tornadoWarning
+        case severeThunderstormWarning
+        case tornadoWatch
+        case severeThunderstormWatch
+        case flashFloodWarning
+        case flashFloodWatch
+        case other
+    }
+
+    var kind: AlertKind {
+        switch event {
+        case "Tornado Warning":             return .tornadoWarning
+        case "Severe Thunderstorm Warning": return .severeThunderstormWarning
+        case "Tornado Watch":               return .tornadoWatch
+        case "Severe Thunderstorm Watch":   return .severeThunderstormWatch
+        case "Flash Flood Warning":         return .flashFloodWarning
+        case "Flash Flood Watch":           return .flashFloodWatch
+        default:                            return .other
+        }
+    }
+
     var accessibilityLabel: String {
         "\(severity.label) – \(event). \(headline). Expires \(expires.formatted(date: .omitted, time: .shortened))."
     }

@@ -290,6 +290,10 @@ extension Data {
         return UInt16(self[index]) << 8 | UInt16(self[index + 1])
     }
 
+    func readInt16BE(at index: Index) -> Int16 {
+        Int16(bitPattern: readUInt16BE(at: index))
+    }
+
     func readUInt32BE(at index: Index) -> UInt32 {
         guard index + 4 <= endIndex else { return 0 }
         return UInt32(self[index]) << 24

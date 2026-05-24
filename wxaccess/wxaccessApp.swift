@@ -24,7 +24,7 @@ struct wxaccessApp: App {
                 .keyboardShortcut("r")
 
                 Button("Animate Loop") {
-                    appState.animating.toggle()
+                    Task { await appState.toggleAnimation() }
                 }
                 .keyboardShortcut("l")
             }

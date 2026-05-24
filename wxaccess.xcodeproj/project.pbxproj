@@ -8,30 +8,55 @@
 
 /* Begin PBXBuildFile section */
 		0ED58BDCD6584F9C9F08AFF2 /* MetalKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 87B262EF5493BDDF6F9392A6 /* MetalKit.framework */; };
+		0F0B5BEDC25D27A928684A61 /* ModelLayer.swift in Sources */ = {isa = PBXBuildFile; fileRef = F71C2EE2EAA0160C02A636EF /* ModelLayer.swift */; };
 		12C4BEB72CBD11B72565C2E7 /* Level2DecoderTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0F9B6B85C7A2F50571A67880 /* Level2DecoderTests.swift */; };
 		17C19C4C0997528E99E12589 /* AppState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2CC1CA6F0B43296B14E7C34F /* AppState.swift */; };
 		1ACF2D2C52FA520103B5BA5D /* Level2Decoder.swift in Sources */ = {isa = PBXBuildFile; fileRef = F974F381DBB3BC3FD76969D7 /* Level2Decoder.swift */; };
+		22DCACFDD9898965C20AE339 /* SonificationEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1432C2C1AF737BCA004E69F /* SonificationEngine.swift */; };
 		2642FF801304086AA56354DB /* MapKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 455EC768D1EAF8C52624C5EE /* MapKit.framework */; };
 		27B8FAFB3905C9CA6D8B5DE7 /* BZip2Decompressor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3452F6FFE4CBD19F939C9D72 /* BZip2Decompressor.swift */; };
 		2B8212CC8622C159F04E6A3F /* wxaccessApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 60BF9207AD39DC5C38BFBA20 /* wxaccessApp.swift */; };
+		2C7A23DAEB8F0AA20C6D9A8A /* PlacefileFetcher.swift in Sources */ = {isa = PBXBuildFile; fileRef = FCF4BA2C2AAE815E0BD68F5B /* PlacefileFetcher.swift */; };
+		3075C5719B5ED94B0CDA5393 /* PlacefileParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1F83F765032D6C646B99449D /* PlacefileParser.swift */; };
 		332ED12E23666D4F153D7202 /* AccessibilityPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0340B33320F8D5C1C89E07DF /* AccessibilityPanel.swift */; };
+		34C33B942338F253A7D830B8 /* Level3Fetcher.swift in Sources */ = {isa = PBXBuildFile; fileRef = 59334D613BCD5C073272F244 /* Level3Fetcher.swift */; };
 		356A40ADED0D2168DC743642 /* AlertsListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DF6CD7BFC88BD0959AD663C3 /* AlertsListView.swift */; };
 		38870DCF1C854C6A86DD5CA4 /* NEXRADSite.swift in Sources */ = {isa = PBXBuildFile; fileRef = F4B2427136256697F4C94293 /* NEXRADSite.swift */; };
+		3DCE92CE392FC51A723FB857 /* Level3Product.swift in Sources */ = {isa = PBXBuildFile; fileRef = 327C925FE66E7B47DCC960DD /* Level3Product.swift */; };
+		41234CF71BB5814CC9E13220 /* SPCMesoscaleDiscussionFetcher.swift in Sources */ = {isa = PBXBuildFile; fileRef = A6463C51099133F9F325BDFA /* SPCMesoscaleDiscussionFetcher.swift */; };
+		44650B8B166447AC97D0BD83 /* PlacefileItem.swift in Sources */ = {isa = PBXBuildFile; fileRef = 45C60E334894748D9F08C7A9 /* PlacefileItem.swift */; };
 		4476CF6E524438296B989325 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F5A64AD639D80A2CDD40E13E /* ContentView.swift */; };
 		474A2A14F2F5BEFB7D6C16D8 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3573837C3F2C2814E5D996A6 /* SettingsView.swift */; };
 		4E9E5665C4E97CE3C10C4423 /* NWSAlert.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB8CBCB7157CC4A4ED061BDA /* NWSAlert.swift */; };
+		4FD8A318477CADB11CD71213 /* SPCStormReportFetcher.swift in Sources */ = {isa = PBXBuildFile; fileRef = 111B3DEFF97257E4D731B9E7 /* SPCStormReportFetcher.swift */; };
 		511BAB82B4D1368118DAD760 /* KEWX_sample.bin in Resources */ = {isa = PBXBuildFile; fileRef = C3848FBF33446F273D1047B3 /* KEWX_sample.bin */; };
 		59F480A0AF5A5FEE5D423C3D /* RadarOverlayRenderer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2D5CDC42FCCBBA6A0D42BD5F /* RadarOverlayRenderer.swift */; };
+		5E78F9F83A435329C248817D /* UserNotifications.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 23A16A8C8B08A23A79E8F316 /* UserNotifications.framework */; };
+		5F4A4B53AC342321FA32E18B /* SPCOutlookFetcher.swift in Sources */ = {isa = PBXBuildFile; fileRef = FF2203BA2FDEE3A247DA70C9 /* SPCOutlookFetcher.swift */; };
 		6F516CADA92787F27FB09F24 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 26E840973061D86145DD5F26 /* Assets.xcassets */; };
+		7195CC4A6A8D87863DE1F17C /* Level3Decoder.swift in Sources */ = {isa = PBXBuildFile; fileRef = F32ED9BBB435BCD8D089F59E /* Level3Decoder.swift */; };
 		75F2DAE56D5C9F957026DBC5 /* NEXRADSiteCatalog.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D5F0D56471C314E99C70706 /* NEXRADSiteCatalog.swift */; };
+		7703509DE64D27458A86FB94 /* ColorPalette.swift in Sources */ = {isa = PBXBuildFile; fileRef = 041E7FCA761E70E137714D9F /* ColorPalette.swift */; };
 		7F5DAEE1E82F55CD465FBD09 /* RadarOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = 86DC8FB10C37E09FACFBCBF1 /* RadarOverlay.swift */; };
+		931E4F3F891E364B7E081D6B /* GOESSatellite.swift in Sources */ = {isa = PBXBuildFile; fileRef = C6EBAB21A51A54ED86D7CDE4 /* GOESSatellite.swift */; };
+		9B314463B74B9319FB671B90 /* KEWX_N0Q_sample.bin in Resources */ = {isa = PBXBuildFile; fileRef = 94245EDBD0585BDDA7F3B2DC /* KEWX_N0Q_sample.bin */; };
+		A0466ABE11A061D76CC3C836 /* SPCMesoscaleDiscussion.swift in Sources */ = {isa = PBXBuildFile; fileRef = BC344B22D5131C3838E0CFB2 /* SPCMesoscaleDiscussion.swift */; };
 		A451B5AD544B0411470B4339 /* RadarSweep.swift in Sources */ = {isa = PBXBuildFile; fileRef = B915F3EAA36E55DC60390310 /* RadarSweep.swift */; };
 		A9A7E24DE89CA1A8D3CE2744 /* Metal.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C24BB8840C928CFD79CDF18A /* Metal.framework */; };
 		BCD07AEE103081564D631B2A /* SiteSelectorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0DC84FC294FDD222CF45512D /* SiteSelectorView.swift */; };
+		C2F050FDC6A03CE070C8FFFD /* SurfaceObsFetcher.swift in Sources */ = {isa = PBXBuildFile; fileRef = 11B0C1087745E17F2DB38312 /* SurfaceObsFetcher.swift */; };
+		C51DC9A4E8384C5EDAA73735 /* AVFoundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C245AFE36E31AAFA314DE974 /* AVFoundation.framework */; };
+		D5063808AFCB171E14CABB6A /* SPCStormReport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 19BD66DF6BA5B35E42FFAACE /* SPCStormReport.swift */; };
+		D95176CA3013C2A13A906B7D /* SPCOutlook.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA731DF4FD29FDAB2E1CADBE /* SPCOutlook.swift */; };
 		DCDDDEBBDBDEBD4AAE8F12A5 /* MainMapView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7C4CA5D27C8807716E8DF36C /* MainMapView.swift */; };
+		DF1FDEAD8E36379A7F7459C1 /* SurfaceObs.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20528937D985585B883C1CED /* SurfaceObs.swift */; };
+		E7F50620A96B0A8C460FD89C /* Level3Overlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = F9EF073F893F69173F8EB595 /* Level3Overlay.swift */; };
+		E92C1843A0DC41B2C17B09C1 /* ColorScaleLegendView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FC17D60D7002C8D4114F67E7 /* ColorScaleLegendView.swift */; };
 		E92D8DCD1413A302C0BADD02 /* AlertsFetcher.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8FD09472CB4EFB7A8C255B2C /* AlertsFetcher.swift */; };
 		EC0FFE4551271DB962FA5E40 /* Accelerate.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C60CBAB7FF9FF69F7D434E92 /* Accelerate.framework */; };
 		F6A4BF4BF4A6140F78DA77E3 /* CoreLocation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 1ED75C48DFF59C71AAE6E419 /* CoreLocation.framework */; };
+		F81289F371DC8B22EDC87E8B /* Level3DecoderTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 43AE73BD7F74847050E8D860 /* Level3DecoderTests.swift */; };
+		F892BB1F16A70A37A2A0F5D6 /* AboutView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 736FAF014EC4E04E3C14AE60 /* AboutView.swift */; };
 		F968F1732A1C3A4145267911 /* Level2Fetcher.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2C18764F1DCBEF307380CCD3 /* Level2Fetcher.swift */; };
 /* End PBXBuildFile section */
 
@@ -47,36 +72,61 @@
 
 /* Begin PBXFileReference section */
 		0340B33320F8D5C1C89E07DF /* AccessibilityPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccessibilityPanel.swift; sourceTree = "<group>"; };
+		041E7FCA761E70E137714D9F /* ColorPalette.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ColorPalette.swift; sourceTree = "<group>"; };
 		0DC84FC294FDD222CF45512D /* SiteSelectorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SiteSelectorView.swift; sourceTree = "<group>"; };
 		0F9B6B85C7A2F50571A67880 /* Level2DecoderTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Level2DecoderTests.swift; sourceTree = "<group>"; };
+		111B3DEFF97257E4D731B9E7 /* SPCStormReportFetcher.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SPCStormReportFetcher.swift; sourceTree = "<group>"; };
+		11B0C1087745E17F2DB38312 /* SurfaceObsFetcher.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SurfaceObsFetcher.swift; sourceTree = "<group>"; };
+		19BD66DF6BA5B35E42FFAACE /* SPCStormReport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SPCStormReport.swift; sourceTree = "<group>"; };
 		1ED75C48DFF59C71AAE6E419 /* CoreLocation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreLocation.framework; path = System/Library/Frameworks/CoreLocation.framework; sourceTree = SDKROOT; };
+		1F83F765032D6C646B99449D /* PlacefileParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlacefileParser.swift; sourceTree = "<group>"; };
+		20528937D985585B883C1CED /* SurfaceObs.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SurfaceObs.swift; sourceTree = "<group>"; };
+		23A16A8C8B08A23A79E8F316 /* UserNotifications.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = UserNotifications.framework; path = System/Library/Frameworks/UserNotifications.framework; sourceTree = SDKROOT; };
 		26E840973061D86145DD5F26 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		2C18764F1DCBEF307380CCD3 /* Level2Fetcher.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Level2Fetcher.swift; sourceTree = "<group>"; };
 		2CC1CA6F0B43296B14E7C34F /* AppState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppState.swift; sourceTree = "<group>"; };
 		2D5CDC42FCCBBA6A0D42BD5F /* RadarOverlayRenderer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RadarOverlayRenderer.swift; sourceTree = "<group>"; };
 		2D9DBB32EAD81E958B9B2DE8 /* wxaccessTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = wxaccessTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		327C925FE66E7B47DCC960DD /* Level3Product.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Level3Product.swift; sourceTree = "<group>"; };
 		3452F6FFE4CBD19F939C9D72 /* BZip2Decompressor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BZip2Decompressor.swift; sourceTree = "<group>"; };
 		3573837C3F2C2814E5D996A6 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		421E3676C5D9EE89E6CC67FF /* wxaccess.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = wxaccess.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		43AE73BD7F74847050E8D860 /* Level3DecoderTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Level3DecoderTests.swift; sourceTree = "<group>"; };
 		455EC768D1EAF8C52624C5EE /* MapKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = MapKit.framework; path = System/Library/Frameworks/MapKit.framework; sourceTree = SDKROOT; };
+		45C60E334894748D9F08C7A9 /* PlacefileItem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlacefileItem.swift; sourceTree = "<group>"; };
+		59334D613BCD5C073272F244 /* Level3Fetcher.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Level3Fetcher.swift; sourceTree = "<group>"; };
 		5EFCAD7E1B9EB0475824871B /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		60BF9207AD39DC5C38BFBA20 /* wxaccessApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = wxaccessApp.swift; sourceTree = "<group>"; };
+		736FAF014EC4E04E3C14AE60 /* AboutView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AboutView.swift; sourceTree = "<group>"; };
 		7975246609DBC8DAA77EDF86 /* wxaccess.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = wxaccess.entitlements; sourceTree = "<group>"; };
 		7C4CA5D27C8807716E8DF36C /* MainMapView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainMapView.swift; sourceTree = "<group>"; };
 		7D5F0D56471C314E99C70706 /* NEXRADSiteCatalog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NEXRADSiteCatalog.swift; sourceTree = "<group>"; };
 		86DC8FB10C37E09FACFBCBF1 /* RadarOverlay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RadarOverlay.swift; sourceTree = "<group>"; };
 		87B262EF5493BDDF6F9392A6 /* MetalKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = MetalKit.framework; path = System/Library/Frameworks/MetalKit.framework; sourceTree = SDKROOT; };
 		8FD09472CB4EFB7A8C255B2C /* AlertsFetcher.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AlertsFetcher.swift; sourceTree = "<group>"; };
+		94245EDBD0585BDDA7F3B2DC /* KEWX_N0Q_sample.bin */ = {isa = PBXFileReference; lastKnownFileType = archive.macbinary; path = KEWX_N0Q_sample.bin; sourceTree = "<group>"; };
+		A6463C51099133F9F325BDFA /* SPCMesoscaleDiscussionFetcher.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SPCMesoscaleDiscussionFetcher.swift; sourceTree = "<group>"; };
 		AB8CBCB7157CC4A4ED061BDA /* NWSAlert.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NWSAlert.swift; sourceTree = "<group>"; };
 		B915F3EAA36E55DC60390310 /* RadarSweep.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RadarSweep.swift; sourceTree = "<group>"; };
 		BA62D152A9D9F579E8DC616F /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		BC344B22D5131C3838E0CFB2 /* SPCMesoscaleDiscussion.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SPCMesoscaleDiscussion.swift; sourceTree = "<group>"; };
+		C245AFE36E31AAFA314DE974 /* AVFoundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AVFoundation.framework; path = System/Library/Frameworks/AVFoundation.framework; sourceTree = SDKROOT; };
 		C24BB8840C928CFD79CDF18A /* Metal.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Metal.framework; path = System/Library/Frameworks/Metal.framework; sourceTree = SDKROOT; };
 		C3848FBF33446F273D1047B3 /* KEWX_sample.bin */ = {isa = PBXFileReference; lastKnownFileType = archive.macbinary; path = KEWX_sample.bin; sourceTree = "<group>"; };
 		C60CBAB7FF9FF69F7D434E92 /* Accelerate.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Accelerate.framework; path = System/Library/Frameworks/Accelerate.framework; sourceTree = SDKROOT; };
+		C6EBAB21A51A54ED86D7CDE4 /* GOESSatellite.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GOESSatellite.swift; sourceTree = "<group>"; };
 		DF6CD7BFC88BD0959AD663C3 /* AlertsListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AlertsListView.swift; sourceTree = "<group>"; };
+		E1432C2C1AF737BCA004E69F /* SonificationEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SonificationEngine.swift; sourceTree = "<group>"; };
+		EA731DF4FD29FDAB2E1CADBE /* SPCOutlook.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SPCOutlook.swift; sourceTree = "<group>"; };
+		F32ED9BBB435BCD8D089F59E /* Level3Decoder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Level3Decoder.swift; sourceTree = "<group>"; };
 		F4B2427136256697F4C94293 /* NEXRADSite.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NEXRADSite.swift; sourceTree = "<group>"; };
 		F5A64AD639D80A2CDD40E13E /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
+		F71C2EE2EAA0160C02A636EF /* ModelLayer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModelLayer.swift; sourceTree = "<group>"; };
 		F974F381DBB3BC3FD76969D7 /* Level2Decoder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Level2Decoder.swift; sourceTree = "<group>"; };
+		F9EF073F893F69173F8EB595 /* Level3Overlay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Level3Overlay.swift; sourceTree = "<group>"; };
+		FC17D60D7002C8D4114F67E7 /* ColorScaleLegendView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ColorScaleLegendView.swift; sourceTree = "<group>"; };
+		FCF4BA2C2AAE815E0BD68F5B /* PlacefileFetcher.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlacefileFetcher.swift; sourceTree = "<group>"; };
+		FF2203BA2FDEE3A247DA70C9 /* SPCOutlookFetcher.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SPCOutlookFetcher.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -89,12 +139,27 @@
 				A9A7E24DE89CA1A8D3CE2744 /* Metal.framework in Frameworks */,
 				0ED58BDCD6584F9C9F08AFF2 /* MetalKit.framework in Frameworks */,
 				EC0FFE4551271DB962FA5E40 /* Accelerate.framework in Frameworks */,
+				5E78F9F83A435329C248817D /* UserNotifications.framework in Frameworks */,
+				C51DC9A4E8384C5EDAA73735 /* AVFoundation.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		234140FCC8A746CD27FAAD90 /* SPC */ = {
+			isa = PBXGroup;
+			children = (
+				BC344B22D5131C3838E0CFB2 /* SPCMesoscaleDiscussion.swift */,
+				A6463C51099133F9F325BDFA /* SPCMesoscaleDiscussionFetcher.swift */,
+				EA731DF4FD29FDAB2E1CADBE /* SPCOutlook.swift */,
+				FF2203BA2FDEE3A247DA70C9 /* SPCOutlookFetcher.swift */,
+				19BD66DF6BA5B35E42FFAACE /* SPCStormReport.swift */,
+				111B3DEFF97257E4D731B9E7 /* SPCStormReportFetcher.swift */,
+			);
+			path = SPC;
+			sourceTree = "<group>";
+		};
 		2ADE3E896B54A0FEBAA85D7F /* Products */ = {
 			isa = PBXGroup;
 			children = (
@@ -104,9 +169,34 @@
 			name = Products;
 			sourceTree = "<group>";
 		};
+		34A7E22DD03FE35132E505E1 /* Model */ = {
+			isa = PBXGroup;
+			children = (
+				F71C2EE2EAA0160C02A636EF /* ModelLayer.swift */,
+			);
+			path = Model;
+			sourceTree = "<group>";
+		};
+		353C99E0C57E059797B84152 /* Audio */ = {
+			isa = PBXGroup;
+			children = (
+				E1432C2C1AF737BCA004E69F /* SonificationEngine.swift */,
+			);
+			path = Audio;
+			sourceTree = "<group>";
+		};
+		4E8B125EDB5DA746CC56531C /* GOES */ = {
+			isa = PBXGroup;
+			children = (
+				C6EBAB21A51A54ED86D7CDE4 /* GOESSatellite.swift */,
+			);
+			path = GOES;
+			sourceTree = "<group>";
+		};
 		4FD6EF67B13A59BD0168EFC8 /* UI */ = {
 			isa = PBXGroup;
 			children = (
+				736FAF014EC4E04E3C14AE60 /* AboutView.swift */,
 				0340B33320F8D5C1C89E07DF /* AccessibilityPanel.swift */,
 				DF6CD7BFC88BD0959AD663C3 /* AlertsListView.swift */,
 				0DC84FC294FDD222CF45512D /* SiteSelectorView.swift */,
@@ -124,9 +214,14 @@
 				3573837C3F2C2814E5D996A6 /* SettingsView.swift */,
 				7975246609DBC8DAA77EDF86 /* wxaccess.entitlements */,
 				60BF9207AD39DC5C38BFBA20 /* wxaccessApp.swift */,
+				353C99E0C57E059797B84152 /* Audio */,
+				4E8B125EDB5DA746CC56531C /* GOES */,
 				6F3C277A64DF6D137B6A4372 /* Map */,
+				34A7E22DD03FE35132E505E1 /* Model */,
 				B437315B76D5084C64AC5FF3 /* NEXRAD */,
 				6BC9326D335944F4EE217411 /* NWS */,
+				679C46236FA6EBA95E8BF866 /* Placefile */,
+				234140FCC8A746CD27FAAD90 /* SPC */,
 				4FD6EF67B13A59BD0168EFC8 /* UI */,
 			);
 			path = wxaccess;
@@ -136,10 +231,22 @@
 			isa = PBXGroup;
 			children = (
 				BA62D152A9D9F579E8DC616F /* Info.plist */,
+				94245EDBD0585BDDA7F3B2DC /* KEWX_N0Q_sample.bin */,
 				C3848FBF33446F273D1047B3 /* KEWX_sample.bin */,
 				0F9B6B85C7A2F50571A67880 /* Level2DecoderTests.swift */,
+				43AE73BD7F74847050E8D860 /* Level3DecoderTests.swift */,
 			);
 			path = wxaccessTests;
+			sourceTree = "<group>";
+		};
+		679C46236FA6EBA95E8BF866 /* Placefile */ = {
+			isa = PBXGroup;
+			children = (
+				FCF4BA2C2AAE815E0BD68F5B /* PlacefileFetcher.swift */,
+				45C60E334894748D9F08C7A9 /* PlacefileItem.swift */,
+				1F83F765032D6C646B99449D /* PlacefileParser.swift */,
+			);
+			path = Placefile;
 			sourceTree = "<group>";
 		};
 		6BC9326D335944F4EE217411 /* NWS */ = {
@@ -147,6 +254,8 @@
 			children = (
 				8FD09472CB4EFB7A8C255B2C /* AlertsFetcher.swift */,
 				AB8CBCB7157CC4A4ED061BDA /* NWSAlert.swift */,
+				20528937D985585B883C1CED /* SurfaceObs.swift */,
+				11B0C1087745E17F2DB38312 /* SurfaceObsFetcher.swift */,
 			);
 			path = NWS;
 			sourceTree = "<group>";
@@ -154,6 +263,9 @@
 		6F3C277A64DF6D137B6A4372 /* Map */ = {
 			isa = PBXGroup;
 			children = (
+				041E7FCA761E70E137714D9F /* ColorPalette.swift */,
+				FC17D60D7002C8D4114F67E7 /* ColorScaleLegendView.swift */,
+				F9EF073F893F69173F8EB595 /* Level3Overlay.swift */,
 				7C4CA5D27C8807716E8DF36C /* MainMapView.swift */,
 				86DC8FB10C37E09FACFBCBF1 /* RadarOverlay.swift */,
 				2D5CDC42FCCBBA6A0D42BD5F /* RadarOverlayRenderer.swift */,
@@ -165,10 +277,12 @@
 			isa = PBXGroup;
 			children = (
 				C60CBAB7FF9FF69F7D434E92 /* Accelerate.framework */,
+				C245AFE36E31AAFA314DE974 /* AVFoundation.framework */,
 				1ED75C48DFF59C71AAE6E419 /* CoreLocation.framework */,
 				455EC768D1EAF8C52624C5EE /* MapKit.framework */,
 				C24BB8840C928CFD79CDF18A /* Metal.framework */,
 				87B262EF5493BDDF6F9392A6 /* MetalKit.framework */,
+				23A16A8C8B08A23A79E8F316 /* UserNotifications.framework */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
@@ -179,6 +293,9 @@
 				3452F6FFE4CBD19F939C9D72 /* BZip2Decompressor.swift */,
 				F974F381DBB3BC3FD76969D7 /* Level2Decoder.swift */,
 				2C18764F1DCBEF307380CCD3 /* Level2Fetcher.swift */,
+				F32ED9BBB435BCD8D089F59E /* Level3Decoder.swift */,
+				59334D613BCD5C073272F244 /* Level3Fetcher.swift */,
+				327C925FE66E7B47DCC960DD /* Level3Product.swift */,
 				F4B2427136256697F4C94293 /* NEXRADSite.swift */,
 				7D5F0D56471C314E99C70706 /* NEXRADSiteCatalog.swift */,
 				B915F3EAA36E55DC60390310 /* RadarSweep.swift */,
@@ -289,6 +406,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				9B314463B74B9319FB671B90 /* KEWX_N0Q_sample.bin in Resources */,
 				511BAB82B4D1368118DAD760 /* KEWX_sample.bin in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -300,23 +418,44 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				F892BB1F16A70A37A2A0F5D6 /* AboutView.swift in Sources */,
 				332ED12E23666D4F153D7202 /* AccessibilityPanel.swift in Sources */,
 				E92D8DCD1413A302C0BADD02 /* AlertsFetcher.swift in Sources */,
 				356A40ADED0D2168DC743642 /* AlertsListView.swift in Sources */,
 				17C19C4C0997528E99E12589 /* AppState.swift in Sources */,
 				27B8FAFB3905C9CA6D8B5DE7 /* BZip2Decompressor.swift in Sources */,
+				7703509DE64D27458A86FB94 /* ColorPalette.swift in Sources */,
+				E92C1843A0DC41B2C17B09C1 /* ColorScaleLegendView.swift in Sources */,
 				4476CF6E524438296B989325 /* ContentView.swift in Sources */,
+				931E4F3F891E364B7E081D6B /* GOESSatellite.swift in Sources */,
 				1ACF2D2C52FA520103B5BA5D /* Level2Decoder.swift in Sources */,
 				F968F1732A1C3A4145267911 /* Level2Fetcher.swift in Sources */,
+				7195CC4A6A8D87863DE1F17C /* Level3Decoder.swift in Sources */,
+				34C33B942338F253A7D830B8 /* Level3Fetcher.swift in Sources */,
+				E7F50620A96B0A8C460FD89C /* Level3Overlay.swift in Sources */,
+				3DCE92CE392FC51A723FB857 /* Level3Product.swift in Sources */,
 				DCDDDEBBDBDEBD4AAE8F12A5 /* MainMapView.swift in Sources */,
+				0F0B5BEDC25D27A928684A61 /* ModelLayer.swift in Sources */,
 				38870DCF1C854C6A86DD5CA4 /* NEXRADSite.swift in Sources */,
 				75F2DAE56D5C9F957026DBC5 /* NEXRADSiteCatalog.swift in Sources */,
 				4E9E5665C4E97CE3C10C4423 /* NWSAlert.swift in Sources */,
+				2C7A23DAEB8F0AA20C6D9A8A /* PlacefileFetcher.swift in Sources */,
+				44650B8B166447AC97D0BD83 /* PlacefileItem.swift in Sources */,
+				3075C5719B5ED94B0CDA5393 /* PlacefileParser.swift in Sources */,
 				7F5DAEE1E82F55CD465FBD09 /* RadarOverlay.swift in Sources */,
 				59F480A0AF5A5FEE5D423C3D /* RadarOverlayRenderer.swift in Sources */,
 				A451B5AD544B0411470B4339 /* RadarSweep.swift in Sources */,
+				A0466ABE11A061D76CC3C836 /* SPCMesoscaleDiscussion.swift in Sources */,
+				41234CF71BB5814CC9E13220 /* SPCMesoscaleDiscussionFetcher.swift in Sources */,
+				D95176CA3013C2A13A906B7D /* SPCOutlook.swift in Sources */,
+				5F4A4B53AC342321FA32E18B /* SPCOutlookFetcher.swift in Sources */,
+				D5063808AFCB171E14CABB6A /* SPCStormReport.swift in Sources */,
+				4FD8A318477CADB11CD71213 /* SPCStormReportFetcher.swift in Sources */,
 				474A2A14F2F5BEFB7D6C16D8 /* SettingsView.swift in Sources */,
 				BCD07AEE103081564D631B2A /* SiteSelectorView.swift in Sources */,
+				22DCACFDD9898965C20AE339 /* SonificationEngine.swift in Sources */,
+				DF1FDEAD8E36379A7F7459C1 /* SurfaceObs.swift in Sources */,
+				C2F050FDC6A03CE070C8FFFD /* SurfaceObsFetcher.swift in Sources */,
 				2B8212CC8622C159F04E6A3F /* wxaccessApp.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -326,6 +465,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				12C4BEB72CBD11B72565C2E7 /* Level2DecoderTests.swift in Sources */,
+				F81289F371DC8B22EDC87E8B /* Level3DecoderTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

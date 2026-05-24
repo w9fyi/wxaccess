@@ -39,6 +39,8 @@ targets:
       - sdk: Metal.framework
       - sdk: MetalKit.framework
       - sdk: Accelerate.framework
+      - sdk: UserNotifications.framework
+      - sdk: AVFoundation.framework
 
   wxaccessTests:
     type: bundle.unit-test

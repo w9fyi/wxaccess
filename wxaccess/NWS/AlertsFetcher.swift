@@ -1,5 +1,6 @@
 import Foundation
 import CoreLocation
+import OSLog
 
 // Fetches active NWS watches/warnings/advisories from api.weather.gov.
 // Documentation: https://www.weather.gov/documentation/services-web-api
@@ -8,6 +9,7 @@ final class AlertsFetcher: @unchecked Sendable {
     static let shared = AlertsFetcher()
 
     private let base = "https://api.weather.gov"
+    private let logger = Logger(subsystem: "net.ai5os.wxaccess", category: "AlertsFetcher")
     private let session: URLSession = {
         var cfg = URLSessionConfiguration.default
         cfg.timeoutIntervalForRequest = 15
@@ -17,23 +19,35 @@ final class AlertsFetcher: @unchecked Sendable {
     // Fetch all active alerts whose area overlaps a 400 km radius around the given coordinate.
     func fetchAlerts(near coordinate: CLLocationCoordinate2D) async throws -> [NWSAlert] {
         let urlStr = "\(base)/alerts/active?point=\(coordinate.latitude),\(coordinate.longitude)&status=actual&message_type=alert"
-        var request = URLRequest(url: URL(string: urlStr)!)
+        guard let url = URL(string: urlStr) else { throw URLError(.badURL) }
+        var request = URLRequest(url: url)
         request.setValue("wxaccess/0.1 (net.ai5os.wxaccess; w9fyi@me.com)", forHTTPHeaderField: "User-Agent")
         request.setValue("application/geo+json", forHTTPHeaderField: "Accept")
 
-        let (data, _) = try await session.data(for: request)
-        return try parseGeoJSON(data: data)
+        do {
+            let (data, _) = try await session.data(for: request)
+            return try parseGeoJSON(data: data)
+        } catch {
+            logger.error("NWS alerts fetch failed: \(error)")
+            throw error
+        }
     }
 
     // Fetch all active alerts for a specific NWS zone (e.g. "TXZ105")
     func fetchAlerts(zone: String) async throws -> [NWSAlert] {
         let urlStr = "\(base)/alerts/active/zone/\(zone)"
-        var request = URLRequest(url: URL(string: urlStr)!)
+        guard let url = URL(string: urlStr) else { throw URLError(.badURL) }
+        var request = URLRequest(url: url)
         request.setValue("wxaccess/0.1 (net.ai5os.wxaccess; w9fyi@me.com)", forHTTPHeaderField: "User-Agent")
         request.setValue("application/geo+json", forHTTPHeaderField: "Accept")
 
-        let (data, _) = try await session.data(for: request)
-        return try parseGeoJSON(data: data)
+        do {
+            let (data, _) = try await session.data(for: request)
+            return try parseGeoJSON(data: data)
+        } catch {
+            logger.error("NWS zone alerts fetch failed for \(zone): \(error)")
+            throw error
+        }
     }
 
     // MARK: - GeoJSON parsing
@@ -50,7 +64,7 @@ final class AlertsFetcher: @unchecked Sendable {
 
     private struct Geometry: Decodable {
         let type: String
-        let coordinates: [[Double]]?          // Polygon outer ring
+        let coordinates: [[[Double]]]?        // GeoJSON Polygon: array of rings (outer + holes)
     }
 
     private struct Properties: Decodable {
@@ -82,7 +96,8 @@ final class AlertsFetcher: @unchecked Sendable {
             var polygon: [CLLocationCoordinate2D] = []
             if let geom = feature.geometry,
                geom.type == "Polygon",
-               let ring = geom.coordinates {
+               let rings = geom.coordinates,
+               let ring = rings.first {
                 polygon = ring.compactMap { pair in
                     guard pair.count == 2 else { return nil }
                     return CLLocationCoordinate2D(latitude: pair[1], longitude: pair[0])

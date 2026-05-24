@@ -1,6 +1,7 @@
 import MapKit
 import CoreLocation
 import CoreGraphics
+import OSLog
 
 // MKOverlay that holds a rasterized radar sweep image and its bounding region.
 final class RadarOverlay: NSObject, MKOverlay, @unchecked Sendable {
@@ -9,12 +10,16 @@ final class RadarOverlay: NSObject, MKOverlay, @unchecked Sendable {
     let image: CGImage
     let sweep: RadarSweep
 
-    init(sweep: RadarSweep, imageSize: Int = 1024) {
+    init(sweep: RadarSweep, imageSize: Int = 0, palette: ColorPalette = .nwsStandard) {
         self.sweep = sweep
         self.coordinate = sweep.site.coordinate
 
+        // Honour the Settings image-size preference; fall back to 1024.
+        let sz = imageSize > 0 ? imageSize
+            : (UserDefaults.standard.integer(forKey: "imageSize") > 0
+               ? UserDefaults.standard.integer(forKey: "imageSize") : 1024)
+
         let maxRangeKm = max(sweep.maxRangeKm, 1)
-        // Build a square bounding box centred on the radar site.
         let originPoint = MKMapPoint(sweep.site.coordinate)
         let metersPerMapPoint = MKMetersPerMapPointAtLatitude(sweep.site.coordinate.latitude)
         let halfSideMapPoints = (maxRangeKm * 1000) / metersPerMapPoint
@@ -25,15 +30,17 @@ final class RadarOverlay: NSObject, MKOverlay, @unchecked Sendable {
             height: halfSideMapPoints * 2
         )
 
-        self.image = RadarOverlay.rasterize(sweep: sweep, size: imageSize, maxRangeKm: maxRangeKm)
+        self.image = RadarOverlay.rasterize(sweep: sweep, size: sz, maxRangeKm: maxRangeKm, palette: palette)
         super.init()
     }
 
     // MARK: - Rasterization
 
+    private static let logger = Logger(subsystem: "net.ai5os.wxaccess", category: "RadarOverlay")
+
     // Convert polar radial data to a square CGImage via inverse-mapping.
     // Each pixel's (azimuth, range) is computed and the nearest gate value looked up.
-    private static func rasterize(sweep: RadarSweep, size: Int, maxRangeKm: Double) -> CGImage {
+    private static func rasterize(sweep: RadarSweep, size: Int, maxRangeKm: Double, palette: ColorPalette) -> CGImage {
         let width  = size
         let height = size
         var pixels = [UInt32](repeating: 0, count: width * height)
@@ -66,7 +73,7 @@ final class RadarOverlay: NSObject, MKOverlay, @unchecked Sendable {
                 let gateIndex = Int((rangeKm * 1000 - Double(radial.firstGateMeters)) / Double(radial.gateSizeMeters))
                 guard let value = radial.physicalValue(gateIndex: gateIndex) else { continue }
 
-                pixels[row * width + col] = momentColor(value: value, momentType: sweep.momentType)
+                pixels[row * width + col] = momentColor(value: value, momentType: sweep.momentType, palette: palette)
             }
         }
 
@@ -79,44 +86,26 @@ final class RadarOverlay: NSObject, MKOverlay, @unchecked Sendable {
             space: colorSpace, bitmapInfo: bitmapInfo.rawValue),
               let image = ctx.makeImage()
         else {
-            return CGImage(width: 1, height: 1, bitsPerComponent: 8, bitsPerPixel: 32,
-                           bytesPerRow: 4, space: colorSpace, bitmapInfo: bitmapInfo,
-                           provider: CGDataProvider(data: Data([0,0,0,0]) as CFData)!,
-                           decode: nil, shouldInterpolate: false, intent: .defaultIntent)!
+            logger.error("CGContext creation failed for \(sweep.site.icao) \(sweep.momentType)")
+            guard let provider = CGDataProvider(data: Data([0, 0, 0, 0]) as CFData),
+                  let fallback = CGImage(width: 1, height: 1, bitsPerComponent: 8, bitsPerPixel: 32,
+                                        bytesPerRow: 4, space: colorSpace, bitmapInfo: bitmapInfo,
+                                        provider: provider, decode: nil, shouldInterpolate: false,
+                                        intent: .defaultIntent)
+            else { fatalError("Cannot create fallback CGImage — graphics subsystem failure") }
+            return fallback
         }
         return image
     }
 
-    private static func momentColor(value: Float, momentType: String) -> UInt32 {
+    private static func momentColor(value: Float, momentType: String, palette: ColorPalette) -> UInt32 {
         switch momentType {
         case "VEL": return velocityColor(ms: value)
         case "ZDR": return zdrColor(db: value)
         case "RHO": return rhoColor(cc: value)
         case "PHI": return phiColor(deg: value)
         case "SW":  return swColor(ms: value)
-        default:    return reflectivityColor(dbz: value)
-        }
-    }
-
-    // Standard NWS reflectivity color table (dBZ)
-    private static func reflectivityColor(dbz: Float) -> UInt32 {
-        switch dbz {
-        case ..<5:    return 0
-        case 5..<10:  return rgba(0x00, 0xEC, 0xEC)
-        case 10..<15: return rgba(0x01, 0x9F, 0xF4)
-        case 15..<20: return rgba(0x03, 0x00, 0xF4)
-        case 20..<25: return rgba(0x02, 0xFD, 0x02)
-        case 25..<30: return rgba(0x01, 0xC5, 0x01)
-        case 30..<35: return rgba(0x00, 0x8E, 0x00)
-        case 35..<40: return rgba(0xFD, 0xF8, 0x02)
-        case 40..<45: return rgba(0xE5, 0xBC, 0x00)
-        case 45..<50: return rgba(0xFD, 0x95, 0x00)
-        case 50..<55: return rgba(0xFD, 0x00, 0x00)
-        case 55..<60: return rgba(0xD4, 0x00, 0x00)
-        case 60..<65: return rgba(0xBC, 0x00, 0x00)
-        case 65..<70: return rgba(0xF8, 0x00, 0xFD)
-        case 70..<75: return rgba(0x98, 0x54, 0xC6)
-        default:      return rgba(0xFF, 0xFF, 0xFF)
+        default:    return palette.reflectivityColor(dbz: value)
         }
     }
 

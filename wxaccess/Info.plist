@@ -17,7 +17,7 @@
 	<key>CFBundlePackageType</key>
 	<string>$(PRODUCT_BUNDLE_PACKAGE_TYPE)</string>
 	<key>CFBundleShortVersionString</key>
-	<string>0.1.0</string>
+	<string>1.0.0</string>
 	<key>CFBundleVersion</key>
 	<string>1</string>
 	<key>LSMinimumSystemVersion</key>
@@ -26,5 +26,9 @@
 	<string>VoiceOver-first NEXRAD weather radar viewer for macOS</string>
 	<key>NSPrincipalClass</key>
 	<string>NSApplication</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>wxaccess uses your location to automatically select the nearest NEXRAD radar site.</string>
+	<key>NSUserNotificationsUsageDescription</key>
+	<string>wxaccess sends notifications for new tornado and severe thunderstorm warnings near your selected radar site.</string>
 </dict>
 </plist>

@@ -1,4 +1,5 @@
 import Foundation
+import OSLog
 
 // Fetches NEXRAD Level 2 scan files from NOAA's public AWS S3 bucket.
 // Bucket:  noaa-nexrad-level2  (requester-pays=false, anonymous access OK)
@@ -9,6 +10,7 @@ final class Level2Fetcher: @unchecked Sendable {
     static let shared = Level2Fetcher()
 
     private let base = "https://noaa-nexrad-level2.s3.amazonaws.com"
+    private let logger = Logger(subsystem: "net.ai5os.wxaccess", category: "Level2Fetcher")
     private let session: URLSession = {
         let cfg = URLSessionConfiguration.default
         cfg.timeoutIntervalForRequest  = 30
@@ -21,13 +23,15 @@ final class Level2Fetcher: @unchecked Sendable {
     /// Returns the most recent scans for a site on today's date (up to 20).
     func listScans(site: NEXRADSite, date: Date = .now) async throws -> [ScanEntry] {
         let cal  = Calendar(identifier: .gregorian)
-        let comps = cal.dateComponents(in: TimeZone(identifier: "UTC")!, from: date)
+        let comps = cal.dateComponents(in: .gmt, from: date)
         let yyyy = String(format: "%04d", comps.year!)
         let mm   = String(format: "%02d", comps.month!)
         let dd   = String(format: "%02d", comps.day!)
         let prefix = "\(yyyy)/\(mm)/\(dd)/\(site.icao)/"
 
-        let listURL = URL(string: "\(base)?prefix=\(prefix)&list-type=2")!
+        guard let listURL = URL(string: "\(base)?prefix=\(prefix)&list-type=2") else {
+            throw URLError(.badURL)
+        }
         let (xmlData, _) = try await session.data(from: listURL)
         return try parseS3Listing(xmlData: xmlData, site: site)
     }
@@ -35,12 +39,19 @@ final class Level2Fetcher: @unchecked Sendable {
     // MARK: - Download
 
     func download(entry: ScanEntry) async throws -> Data {
-        let url = URL(string: "\(base)/\(entry.id)")!
-        let (data, response) = try await session.data(from: url)
-        guard let http = response as? HTTPURLResponse, http.statusCode == 200 else {
-            throw URLError(.badServerResponse)
+        guard let url = URL(string: "\(base)/\(entry.id)") else {
+            throw URLError(.badURL)
         }
-        return data
+        do {
+            let (data, response) = try await session.data(from: url)
+            guard let http = response as? HTTPURLResponse, http.statusCode == 200 else {
+                throw URLError(.badServerResponse)
+            }
+            return data
+        } catch {
+            logger.error("Level 2 download failed for \(entry.fileName): \(error)")
+            throw error
+        }
     }
 
     // MARK: - S3 XML listing parser
