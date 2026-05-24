@@ -258,6 +258,7 @@ private struct ProductPicker: View {
             } else {
                 appState.level3Sweep = nil
                 appState.selectCurrentSweep()
+                appState.announceSweepSummary()
             }
         }
     }
@@ -280,6 +281,7 @@ private struct TiltPicker: View {
         .frame(width: 80)
         .onChange(of: appState.tiltIndex) { _, _ in
             appState.selectCurrentSweep()
+            appState.announceSweepSummary()
         }
     }
 }

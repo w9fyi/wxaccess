@@ -80,7 +80,8 @@ final class AppState: NSObject {
     var sonificationBearing: Double = 0
     var sonificationResult: String = ""
 
-    // MARK: - Gate probe
+    // MARK: - Bearing+range probe (accessible keyboard alternative to map tap)
+    var probeRangeKm: Double = 50.0
     var probeResult: ProbeResult? = nil
 
     // MARK: - Auto-refresh
@@ -179,12 +180,6 @@ final class AppState: NSObject {
             let newSweeps = capturedSites.indices.compactMap { fetchedSweeps[$0] }
             if !newSweeps.isEmpty { currentSweeps = newSweeps }
 
-            if let sweep = currentSweeps.first {
-                let msg = "Radar loaded: \(sweep.site.displayName), \(selectedProduct.displayName)"
-                NSAccessibility.post(element: NSApp as AnyObject, notification: .announcementRequested,
-                                     userInfo: [NSAccessibility.NotificationUserInfoKey.announcement: msg])
-            }
-
             self.alerts               = try await alertsTask
             self.outlooks             = await outlooksTask
             self.mesoscaleDiscussions = await mdsTask
@@ -193,6 +188,7 @@ final class AppState: NSObject {
             self.placefiles           = await pfilesTask
             self.stormCells           = (try? await cellsTask) ?? []
             notifyNewAlerts(self.alerts)
+            announceSweepSummary()
         } catch {
             errorMessage = error.localizedDescription
         }
@@ -210,11 +206,7 @@ final class AppState: NSObject {
             let data = try await Level2Fetcher.shared.download(entry: entry)
             allSweeps = try Level2Decoder().decode(data: data)
             selectCurrentSweep()
-            if let sweep = currentSweep {
-                let msg = "Radar loaded: \(sweep.site.displayName), \(selectedProduct.displayName)"
-                NSAccessibility.post(element: NSApp as AnyObject, notification: .announcementRequested,
-                                     userInfo: [NSAccessibility.NotificationUserInfoKey.announcement: msg])
-            }
+            announceSweepSummary()
         } catch {
             errorMessage = error.localizedDescription
             NSAccessibility.post(element: NSApp as AnyObject, notification: .announcementRequested,
@@ -252,6 +244,7 @@ final class AppState: NSObject {
             guard let entry = entries.first else { throw URLError(.fileDoesNotExist) }
             let data     = try await Level3Fetcher.shared.download(entry: entry)
             level3Sweep  = try Level3Decoder().decode(data: data, site: selectedSite, product: code)
+            announceSweepSummary()
         } catch {
             errorMessage = error.localizedDescription
             level3Sweep  = nil
@@ -477,6 +470,118 @@ final class AppState: NSObject {
             notification: .announcementRequested,
             userInfo: [NSAccessibility.NotificationUserInfoKey.announcement: text]
         )
+    }
+
+    // MARK: - Sweep summary announcement
+
+    func announceSweepSummary() {
+        var parts: [String] = []
+
+        if let sweep = currentSweep, !sweep.radials.isEmpty {
+            let timeStr = sweep.scanTime.formatted(date: .omitted, time: .shortened)
+            parts.append("\(sweep.site.icao) \(momentLabel(sweep.momentType)) \(String(format: "%.1f", sweep.elevationAngle))° loaded, \(timeStr) UTC")
+            if let (maxVal, maxBearing, maxRangeKm) = sweepMaxEcho(sweep: sweep) {
+                let cp   = compassPoint(maxBearing)
+                let unit = momentUnit(sweep.momentType)
+                parts.append("Maximum \(String(format: "%.0f", maxVal)) \(unit) at \(cp) \(Int(maxRangeKm.rounded())) km")
+            } else {
+                parts.append("No significant echoes")
+            }
+        } else if let l3 = level3Sweep, !l3.radials.isEmpty {
+            let timeStr = l3.scanTime.formatted(date: .omitted, time: .shortened)
+            parts.append("\(l3.site.icao) \(l3.productCode.displayName) loaded, \(timeStr) UTC")
+            if let (maxVal, maxBearing, maxRangeKm) = level3MaxEcho(sweep: l3) {
+                let cp = compassPoint(maxBearing)
+                parts.append("Maximum \(String(format: "%.1f", maxVal)) \(l3.productCode.physicalUnit) at \(cp) \(Int(maxRangeKm.rounded())) km")
+            }
+        } else {
+            return
+        }
+
+        if !stormCells.isEmpty {
+            parts.append("\(stormCells.count) storm cell\(stormCells.count == 1 ? "" : "s") tracked")
+        }
+
+        let warnings = alerts.filter { $0.severity == .extreme || $0.severity == .severe }
+        if !warnings.isEmpty {
+            parts.append("\(warnings.count) active warning\(warnings.count == 1 ? "" : "s")")
+        } else if !alerts.isEmpty {
+            parts.append("\(alerts.count) active alert\(alerts.count == 1 ? "" : "s")")
+        }
+
+        let text = parts.joined(separator: ". ") + "."
+        NSAccessibility.post(element: NSApp as AnyObject, notification: .announcementRequested,
+                             userInfo: [NSAccessibility.NotificationUserInfoKey.announcement: text])
+    }
+
+    private func sweepMaxEcho(sweep: RadarSweep) -> (value: Float, bearing: Double, rangeKm: Double)? {
+        var maxVal: Float?
+        var maxBearing = 0.0
+        var maxRangeKm = 0.0
+        for radial in sweep.radials {
+            for i in 0..<radial.numGates {
+                guard let v = radial.physicalValue(gateIndex: i) else { continue }
+                if maxVal == nil || v > maxVal! {
+                    maxVal     = v
+                    maxBearing = radial.azimuth
+                    maxRangeKm = radial.rangeToGate(index: i)
+                }
+            }
+        }
+        guard let v = maxVal else { return nil }
+        return (v, maxBearing, maxRangeKm)
+    }
+
+    private func level3MaxEcho(sweep: Level3RadialSweep) -> (value: Float, bearing: Double, rangeKm: Double)? {
+        var maxVal: Float?
+        var maxBearing = 0.0
+        var maxRangeKm = 0.0
+        for radial in sweep.radials {
+            for i in 0..<radial.data.count {
+                guard let v = sweep.productCode.physicalValue(code: radial.data[i]) else { continue }
+                if maxVal == nil || v > maxVal! {
+                    maxVal     = v
+                    maxBearing = radial.startAngle
+                    maxRangeKm = sweep.firstBinKm + Double(i) * sweep.binSizeKm
+                }
+            }
+        }
+        guard let v = maxVal else { return nil }
+        return (v, maxBearing, maxRangeKm)
+    }
+
+    // MARK: - Bearing+range probe
+
+    func probeAtBearingRange() {
+        let siteCoord: CLLocationCoordinate2D
+        if let sweep = currentSweep {
+            siteCoord = sweep.site.coordinate
+        } else if let l3 = level3Sweep {
+            siteCoord = l3.site.coordinate
+        } else {
+            let desc = "No radar data loaded."
+            probeResult = ProbeResult(coordinate: selectedSite.coordinate,
+                                      bearing: sonificationBearing, rangeKm: probeRangeKm,
+                                      description: desc)
+            announceProbe(desc)
+            return
+        }
+        let target = destinationCoordinate(from: siteCoord,
+                                           bearing: sonificationBearing,
+                                           rangeKm: probeRangeKm)
+        probe(at: target)
+    }
+
+    private func destinationCoordinate(from site: CLLocationCoordinate2D,
+                                        bearing: Double, rangeKm: Double) -> CLLocationCoordinate2D {
+        let R  = 6371.0
+        let d  = rangeKm / R
+        let b  = bearing * .pi / 180
+        let φ1 = site.latitude  * .pi / 180
+        let λ1 = site.longitude * .pi / 180
+        let φ2 = asin(sin(φ1) * cos(d) + cos(φ1) * sin(d) * cos(b))
+        let λ2 = λ1 + atan2(sin(b) * sin(d) * cos(φ1), cos(d) - sin(φ1) * sin(φ2))
+        return CLLocationCoordinate2D(latitude: φ2 * 180 / .pi, longitude: λ2 * 180 / .pi)
     }
 
     private func bearingAndRangeKm(from site: CLLocationCoordinate2D,

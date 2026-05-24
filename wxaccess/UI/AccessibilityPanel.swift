@@ -186,27 +186,46 @@ struct AccessibilityPanel: View {
         .accessibilityLabel("Animation playback controls")
     }
 
-    // MARK: - Sonification
+    // MARK: - Sonification & point probe
 
     private var sonificationSection: some View {
         @Bindable var state = appState
+        let hasData = appState.currentSweep != nil || appState.level3Sweep != nil || !appState.animationFrames.isEmpty
         return VStack(alignment: .leading, spacing: 6) {
-            Label("Radar Sonification", systemImage: "waveform")
+            Label("Radar Sonification & Point Probe", systemImage: "waveform")
                 .font(.caption.weight(.semibold)).foregroundStyle(.secondary)
             HStack {
                 Text("Bearing:").font(.caption).foregroundStyle(.secondary).frame(width: 60, alignment: .leading)
                 Stepper(value: $state.sonificationBearing, in: 0...359, step: 5) {
                     Text(String(format: "%.0f°", appState.sonificationBearing)).font(.caption.monospacedDigit())
                 }
-                .accessibilityLabel("Bearing: \(Int(appState.sonificationBearing.rounded())) degrees")
+                .accessibilityLabel("Bearing")
                 .accessibilityValue(String(format: "%.0f degrees", appState.sonificationBearing))
             }
-            Button { appState.sonify() } label: {
-                Label("Sonify Bearing", systemImage: "speaker.wave.2").font(.caption)
+            HStack {
+                Text("Range:").font(.caption).foregroundStyle(.secondary).frame(width: 60, alignment: .leading)
+                Stepper(value: $state.probeRangeKm, in: 5...460, step: 10) {
+                    Text("\(Int(appState.probeRangeKm.rounded())) km").font(.caption.monospacedDigit())
+                }
+                .accessibilityLabel("Range")
+                .accessibilityValue("\(Int(appState.probeRangeKm.rounded())) kilometers")
+                .accessibilityHint("Distance from radar for the point probe")
             }
-            .disabled(appState.currentSweep == nil && appState.animationFrames.isEmpty)
-            .accessibilityLabel("Sonify bearing \(Int(appState.sonificationBearing.rounded())) degrees")
-            .accessibilityHint("Plays radar gate values along this bearing as audio tones. Higher pitch = stronger echo.")
+            HStack(spacing: 8) {
+                Button { appState.sonify() } label: {
+                    Label("Sonify Bearing", systemImage: "speaker.wave.2").font(.caption)
+                }
+                .disabled(!hasData)
+                .accessibilityLabel("Sonify bearing \(Int(appState.sonificationBearing.rounded())) degrees")
+                .accessibilityHint("Plays radar gate values along this bearing as audio tones. Higher pitch means stronger echo.")
+
+                Button { appState.probeAtBearingRange() } label: {
+                    Label("Probe Point", systemImage: "scope").font(.caption)
+                }
+                .disabled(!hasData)
+                .accessibilityLabel("Probe point at \(Int(appState.sonificationBearing.rounded()))° bearing, \(Int(appState.probeRangeKm.rounded())) km range")
+                .accessibilityHint("Reads the radar value at this bearing and distance. Result is announced and shown below.")
+            }
             if !appState.sonificationResult.isEmpty {
                 Text(appState.sonificationResult)
                     .font(.caption2).foregroundStyle(.secondary)
@@ -215,7 +234,7 @@ struct AccessibilityPanel: View {
             }
         }
         .accessibilityElement(children: .contain)
-        .accessibilityLabel("Radar sonification")
+        .accessibilityLabel("Radar sonification and point probe")
     }
 
     // MARK: - Alerts
