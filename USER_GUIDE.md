@@ -36,7 +36,8 @@ This guide walks you from installation through every feature, with plain-English
 22. [Accessibility Panel Reference](#accessibility-panel-reference)
 23. [Settings and Preferences](#settings-and-preferences)
 24. [Keyboard Shortcuts](#keyboard-shortcuts)
-25. [Data Sources](#data-sources)
+25. [Filing a Bug Report](#filing-a-bug-report)
+26. [Data Sources](#data-sources)
 
 ---
 
@@ -789,6 +790,88 @@ Manage custom overlay URLs. Add via the text field; remove individually.
 | `Return` | Activate focused button or toggle |
 | `Space` | Play/Pause animation (when animation controls are focused) |
 | Arrow keys | Step through animation frames (when animation controls are focused) |
+
+---
+
+## Filing a Bug Report
+
+The ladybug button at the right end of the toolbar lets you report a problem directly from within the app. When you submit a report, wxaccess automatically creates a GitHub issue on the wxaccess project page with a description of the problem and a snapshot of the app's internal state at the time of the report. You do not need a GitHub account to use this feature in general, but you do need one for the one-time setup described below.
+
+### What gets included in a report
+
+Every report contains three things:
+
+- **Your description** — what you typed in the description field. The first line becomes the issue title.
+- **App state snapshot** — the radar sites you had selected, the current product and tilt, which overlays were active, and any error message the app was showing at the time.
+- **Recent log entries** — the last 50 lines written to the app's internal log in the five minutes before you submitted the report. These help diagnose network errors, data decoding problems, and other issues that do not produce a visible error message.
+
+No personal information, location data, or radar imagery is included in the report.
+
+### One-time setup: creating a GitHub token
+
+wxaccess uses a GitHub personal access token to file issues on your behalf. You only need to do this once — the token is saved securely to your Mac's Keychain and reused automatically from then on.
+
+**Step 1 — Sign in to GitHub**
+
+Go to [github.com](https://github.com) in your browser and sign in to your account. If you do not have an account, create one for free at [github.com/signup](https://github.com/signup).
+
+**Step 2 — Open the token creation page**
+
+Click your profile photo in the top-right corner of any GitHub page. Choose **Settings** from the menu. In the left sidebar, scroll to the bottom and click **Developer settings**. Then click **Personal access tokens** → **Fine-grained tokens**.
+
+**Step 3 — Generate a new token**
+
+Click **Generate new token**. GitHub may ask you to confirm your password.
+
+Fill in the form as follows:
+
+| Field | What to enter |
+|---|---|
+| Token name | `wxaccess bug reporter` (or any name you will recognize) |
+| Expiration | 1 year (or your preference) |
+| Resource owner | Your GitHub username |
+| Repository access | **Only select repositories**, then choose **wxaccess** from the list |
+
+**Step 4 — Set the permission**
+
+Under **Repository permissions**, find **Issues** in the list and change its access level to **Read and write**. All other permissions can remain set to **No access**.
+
+**Step 5 — Generate and copy the token**
+
+Click **Generate token** at the bottom of the page. GitHub will display your new token — a long string starting with `github_pat_`. **Copy it now.** GitHub will not show it again after you leave this page. If you lose it, you can always generate a new one by repeating these steps.
+
+### Filing your first report
+
+**Step 1** — Click the ladybug button in the toolbar (or choose **Help → File a Bug…** from the menu bar).
+
+**Step 2** — The bug report sheet opens. Because this is your first time, a token entry field labeled **GitHub Personal Access Token** appears below the description field.
+
+**Step 3** — Type a brief description of the problem in the main text area. For example: *"The radar image went blank after switching from KEWX to KHGX and never came back."* The clearer your description, the faster the problem can be diagnosed.
+
+**Step 4** — Paste the token you copied from GitHub into the **GitHub Personal Access Token** field.
+
+**Step 5** — Click **Submit**. The app files the issue, shows you a link to the newly created issue on GitHub, and saves the token to your Keychain.
+
+After this first submission, the token field will not appear again. Future reports require only a description and a click of Submit.
+
+### Subsequent reports
+
+Click the ladybug button, type a description, and click **Submit**. That is all. The token is retrieved from your Keychain automatically.
+
+### If submission fails
+
+If the report cannot be filed, the sheet shows an error message and a **Try Again** button. Common causes:
+
+| Error | What to do |
+|---|---|
+| "No GitHub token found" | The Keychain entry was deleted. Follow the one-time setup steps again. |
+| "GitHub API error 401" | The token expired or was revoked. Generate a new one and paste it — the token field will reappear automatically. |
+| "GitHub API error 403" | The token does not have Issues: Write permission on the wxaccess repository. Delete the token on GitHub, generate a new one, and make sure to select Issues → Read and write in Step 4 above. |
+| Network error | Check your internet connection and try again. |
+
+### Viewing filed reports
+
+All filed reports appear at [github.com/w9fyi/wxaccess/issues](https://github.com/w9fyi/wxaccess/issues). You do not need to be signed in to view them. The **Open in Browser** button on the success screen takes you directly to the issue you just filed.
 
 ---
 
