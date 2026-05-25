@@ -12,6 +12,7 @@
 		12C4BEB72CBD11B72565C2E7 /* Level2DecoderTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0F9B6B85C7A2F50571A67880 /* Level2DecoderTests.swift */; };
 		17C19C4C0997528E99E12589 /* AppState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2CC1CA6F0B43296B14E7C34F /* AppState.swift */; };
 		1ACF2D2C52FA520103B5BA5D /* Level2Decoder.swift in Sources */ = {isa = PBXBuildFile; fileRef = F974F381DBB3BC3FD76969D7 /* Level2Decoder.swift */; };
+		21EDAA4C8100BD5DFD4583EF /* EchoInterpretation.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB009F9BDDD5E4C9691861FA /* EchoInterpretation.swift */; };
 		2642FF801304086AA56354DB /* MapKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 455EC768D1EAF8C52624C5EE /* MapKit.framework */; };
 		27B8FAFB3905C9CA6D8B5DE7 /* BZip2Decompressor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3452F6FFE4CBD19F939C9D72 /* BZip2Decompressor.swift */; };
 		2B8212CC8622C159F04E6A3F /* wxaccessApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 60BF9207AD39DC5C38BFBA20 /* wxaccessApp.swift */; };
@@ -119,6 +120,7 @@
 		B6DAC35AD931C56D13F02B51 /* BugReportView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BugReportView.swift; sourceTree = "<group>"; };
 		B915F3EAA36E55DC60390310 /* RadarSweep.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RadarSweep.swift; sourceTree = "<group>"; };
 		BA62D152A9D9F579E8DC616F /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		BB009F9BDDD5E4C9691861FA /* EchoInterpretation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EchoInterpretation.swift; sourceTree = "<group>"; };
 		BC344B22D5131C3838E0CFB2 /* SPCMesoscaleDiscussion.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SPCMesoscaleDiscussion.swift; sourceTree = "<group>"; };
 		C245AFE36E31AAFA314DE974 /* AVFoundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AVFoundation.framework; path = System/Library/Frameworks/AVFoundation.framework; sourceTree = SDKROOT; };
 		C24BB8840C928CFD79CDF18A /* Metal.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Metal.framework; path = System/Library/Frameworks/Metal.framework; sourceTree = SDKROOT; };
@@ -295,6 +297,7 @@
 			isa = PBXGroup;
 			children = (
 				3452F6FFE4CBD19F939C9D72 /* BZip2Decompressor.swift */,
+				BB009F9BDDD5E4C9691861FA /* EchoInterpretation.swift */,
 				F974F381DBB3BC3FD76969D7 /* Level2Decoder.swift */,
 				2C18764F1DCBEF307380CCD3 /* Level2Fetcher.swift */,
 				F32ED9BBB435BCD8D089F59E /* Level3Decoder.swift */,
@@ -445,6 +448,7 @@
 				7703509DE64D27458A86FB94 /* ColorPalette.swift in Sources */,
 				E92C1843A0DC41B2C17B09C1 /* ColorScaleLegendView.swift in Sources */,
 				4476CF6E524438296B989325 /* ContentView.swift in Sources */,
+				21EDAA4C8100BD5DFD4583EF /* EchoInterpretation.swift in Sources */,
 				931E4F3F891E364B7E081D6B /* GOESSatellite.swift in Sources */,
 				1ACF2D2C52FA520103B5BA5D /* Level2Decoder.swift in Sources */,
 				F968F1732A1C3A4145267911 /* Level2Fetcher.swift in Sources */,

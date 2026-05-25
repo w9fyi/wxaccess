@@ -90,6 +90,10 @@ final class AppState: NSObject {
     // All tilts from the latest primary-site scan (used for tilt browsing).
     private var allSweeps: [RadarSweep] = []
 
+    // All decoded moments at the current tilt for every selected site.
+    // Outer key: ICAO. Inner key: momentType ("REF", "VEL", etc.)
+    private var allMomentSweepsByIcao: [String: [String: RadarSweep]] = [:]
+
     // MARK: - Location
     private var locationManager: CLLocationManager?
     var isLocating: Bool = false
@@ -141,9 +145,10 @@ final class AppState: NSObject {
             let capturedTilt  = tiltAngle(for: tiltIndex)
             let capturedProd  = selectedProduct.rawValue
 
-            var fetchedSweeps: [Int: RadarSweep] = [:]
-            var primaryScans:  [ScanEntry]       = []
-            var primaryAllSweeps: [RadarSweep]   = []
+            var fetchedSweeps:  [Int: RadarSweep]              = [:]
+            var momentsByIcao:  [String: [String: RadarSweep]] = [:]
+            var primaryScans:   [ScanEntry]                    = []
+            var primaryAllSweeps: [RadarSweep]                 = []
 
             await withTaskGroup(of: (Int, [RadarSweep], [ScanEntry]).self) { group in
                 for (idx, site) in capturedSites.enumerated() {
@@ -159,15 +164,28 @@ final class AppState: NSObject {
                 }
                 for await (idx, sweeps, scans) in group {
                     if idx == 0 {
-                        primaryScans     = scans
-                        primaryAllSweeps = sweeps
+                        primaryScans      = scans
+                        primaryAllSweeps  = sweeps
                     }
+                    // Build moment dict at the selected tilt for this site.
+                    let site = capturedSites[idx]
+                    var momentDict: [String: RadarSweep] = [:]
+                    for sweep in sweeps where abs(sweep.elevationAngle - capturedTilt) < 0.5 {
+                        momentDict[sweep.momentType] = sweep
+                    }
+                    // Fallback: if no sweep matched this tilt, grab any tilt per moment.
+                    for sweep in sweeps where momentDict[sweep.momentType] == nil {
+                        momentDict[sweep.momentType] = sweep
+                    }
+                    momentsByIcao[site.icao] = momentDict
+
                     let sweep = sweeps.first { $0.momentType == capturedProd && abs($0.elevationAngle - capturedTilt) < 0.5 }
                         ?? sweeps.first { $0.momentType == capturedProd }
                         ?? sweeps.first
                     if let s = sweep { fetchedSweeps[idx] = s }
                 }
             }
+            allMomentSweepsByIcao = momentsByIcao
 
             // Atomic display update — only change what's shown when new data is ready.
             availableScans = primaryScans
@@ -422,7 +440,7 @@ final class AppState: NSObject {
         let primaryCoord = currentSweeps[0].site.coordinate
         let (bearing, rangeKm) = bearingAndRangeKm(from: primaryCoord, to: coordinate)
         let cp = compassPoint(bearing)
-        let readings = currentSweeps.map { siteReading(sweep: $0, at: coordinate) }
+        let readings = currentSweeps.map { fullSiteReading(sweep: $0, at: coordinate) }
         let loc  = "\(cp) \(String(format: "%.0f", rangeKm)) km from \(currentSweeps[0].site.icao)"
         let desc = readings.joined(separator: ". ") + ". " + loc
         probeResult = ProbeResult(coordinate: coordinate, bearing: bearing, rangeKm: rangeKm, description: desc)
@@ -442,6 +460,47 @@ final class AppState: NSObject {
         let phys   = radial.physicalValue(gateIndex: gateIdx)
         let valStr = phys.map { String(format: "%.1f \(momentUnit(sweep.momentType))", $0) } ?? "no echo"
         return "\(sweep.site.icao): \(valStr)"
+    }
+
+    private func fullSiteReading(sweep: RadarSweep, at coordinate: CLLocationCoordinate2D) -> String {
+        guard !sweep.radials.isEmpty else { return "\(sweep.site.icao): no data" }
+        let (bearing, rangeKm) = bearingAndRangeKm(from: sweep.site.coordinate, to: coordinate)
+
+        // Reusable gate lookup for any sweep at this bearing/range.
+        func gateValue(in s: RadarSweep) -> Float? {
+            guard let radial = s.radials.min(by: {
+                angularDiff($0.azimuth, bearing) < angularDiff($1.azimuth, bearing)
+            }) else { return nil }
+            let gateIdx = Int(round((rangeKm * 1000 - Double(radial.firstGateMeters)) / Double(radial.gateSizeMeters)))
+            return radial.physicalValue(gateIndex: gateIdx)
+        }
+
+        // Check coverage using the display sweep first.
+        guard let radial = sweep.radials.min(by: {
+            angularDiff($0.azimuth, bearing) < angularDiff($1.azimuth, bearing)
+        }) else { return "\(sweep.site.icao): no data" }
+        let gateIdx = Int(round((rangeKm * 1000 - Double(radial.firstGateMeters)) / Double(radial.gateSizeMeters)))
+        guard gateIdx >= 0, gateIdx < radial.numGates else {
+            return "\(sweep.site.icao): outside coverage"
+        }
+
+        // Fall back to single-moment if no multi-moment cache available.
+        guard let momentDict = allMomentSweepsByIcao[sweep.site.icao], !momentDict.isEmpty else {
+            return siteReading(sweep: sweep, at: coordinate)
+        }
+
+        // Look up each moment using prefix matching to handle trailing-space variants (e.g. "SW ").
+        let ref = momentDict.first { $0.key.hasPrefix("REF") }.flatMap { gateValue(in: $0.value) }
+        let vel = momentDict.first { $0.key.hasPrefix("VEL") }.flatMap { gateValue(in: $0.value) }
+        let zdr = momentDict.first { $0.key.hasPrefix("ZDR") }.flatMap { gateValue(in: $0.value) }
+        let rho = momentDict.first { $0.key.hasPrefix("RHO") }.flatMap { gateValue(in: $0.value) }
+        let sw  = momentDict.first { $0.key.hasPrefix("SW")  }.flatMap { gateValue(in: $0.value) }
+
+        let (reading, assessment, confidence) = EchoInterpretation.interpret(
+            ref: ref, zdr: zdr, rho: rho, vel: vel, sw: sw,
+            rangeKm: rangeKm, elevationDeg: sweep.elevationAngle
+        )
+        return "\(sweep.site.icao): \(reading). \(assessment). Confidence: \(confidence)."
     }
 
     private func announceProbe(_ text: String) {
