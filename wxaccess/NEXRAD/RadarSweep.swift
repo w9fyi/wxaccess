@@ -27,7 +27,7 @@ struct Radial: Sendable {
     let data: [UInt16]
 
     func physicalValue(gateIndex: Int) -> Float? {
-        guard gateIndex < data.count else { return nil }
+        guard gateIndex >= 0, gateIndex < data.count else { return nil }
         let raw = data[gateIndex]
         guard raw > 1 else { return nil }
         return (Float(raw) - offset) / scale
