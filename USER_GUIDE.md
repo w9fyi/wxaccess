@@ -1,6 +1,6 @@
 # wxaccess User Guide
 
-**Version 1.0 — macOS 14 Sonoma and later**
+**Version 1.1.2 — macOS 14 Sonoma and later**
 
 ---
 
@@ -251,7 +251,6 @@ These are the rawest, highest-resolution measurements available from the radar. 
 | Echo Tops | EET | Estimated top of radar echoes in thousands of feet |
 | Digital VIL | DVL | Vertically Integrated Liquid — water content of a column |
 | Storm Total Precip | STP | Cumulative rainfall estimate since last reset |
-| One-Hour Precip | OHP | Estimated rainfall in the past hour |
 
 **Echo Tops (EET)** measures how high storms reach. Ordinary thunderstorms top out at 30,000–40,000 ft. Severe storms often exceed 50,000 ft. Overshooting tops visible on echo tops are a sign of an explosive, powerful updraft.
 
@@ -696,9 +695,14 @@ The app samples the radar data along a line extending from the radar site at a c
 
 Each tone lasts 30 milliseconds with a smooth onset and release so consecutive tones do not click. The sequence covers the radar's range (up to 230 km) in about 1.4 seconds.
 
-### Using the sonification control
+### Using the sonification and probe controls
 
-The **Bearing** stepper in the Data Summary panel adjusts the bearing angle from 0° (north) to 359° in 5° steps. Click the stepper up or down to rotate the probe line. The sonification plays automatically each time the bearing changes.
+The **Bearing** stepper in the Data Summary panel adjusts the bearing angle from 0° (north) to 359° in 5° steps. The **Range** stepper sets the distance from the radar (5–460 km, in 10 km steps).
+
+Two buttons act on the current bearing and range:
+
+- **Sonify Bearing** — plays radar gate values along the full bearing line as audio tones, starting from the radar and sweeping outward to the edge of coverage. The panel also shows text listing the top echoes by intensity.
+- **Probe Point** — reads the radar value at exactly the bearing and range you set. The result is announced by VoiceOver and shown in the Gate Probe row below.
 
 Alongside the audio, the Data Summary panel shows text output listing the **top three echoes** by intensity — their strength and range — so the spoken result can be combined with the tones.
 
@@ -882,10 +886,11 @@ All data used by wxaccess is free and requires no registration or API key.
 | Source | URL | What is fetched |
 |---|---|---|
 | Unidata THREDDS (Level 2) | `thredds.ucar.edu` | Raw radar sweeps (Archive II format), 7-day rolling window |
-| Unidata THREDDS (Level 3) | `thredds.ucar.edu` | Processed Level 3 products including NST storm cells, 14-day rolling window |
-| NWS Alerts | `api.weather.gov` | Active watches, warnings, and advisories |
+| NWS TGFTP (Level 3) | `tgftp.nws.noaa.gov` | Level 3 products (REF, VEL, EET, STP) — primary source, ~2 min latency |
+| Unidata THREDDS (Level 3 fallback) | `thredds.ucar.edu` | Digital VIL (DVL) and NST storm cells — THREDDS only, 14-day window |
+| NWS Alerts | `api.weather.gov` | Active watches, warnings, advisories, and mesoscale discussions |
 | Aviation Weather | `aviationweather.gov` | METAR surface observations |
-| SPC | `spc.noaa.gov` | Convective outlooks, mesoscale discussions, storm reports |
+| SPC | `spc.noaa.gov` | Convective outlooks and storm reports |
 | Iowa State Mesonet | `mesonet.agron.iastate.edu` | GOES-16 satellite tiles, HRRR/MRMS model tiles, county borders |
 
 Data is fetched over HTTPS. No data is sent from your computer to any of these services — the app makes standard read-only HTTP requests identical to loading a webpage.

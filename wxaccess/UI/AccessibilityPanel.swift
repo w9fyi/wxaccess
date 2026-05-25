@@ -113,7 +113,7 @@ struct AccessibilityPanel: View {
             return "Echo top height in thousands of feet. 30–40 kft: moderate convection. 40–55 kft: deep thunderstorm. > 55 kft: severe or supercell storm."
         case .vil:
             return "Vertically Integrated Liquid (kg/m²). > 30: heavy rain possible. > 50: hail possible. A sudden large drop in VIL may indicate hail descent."
-        case .stormTotalPrecip, .oneHourPrecip:
+        case .stormTotalPrecip:
             return "Estimated accumulated precipitation in inches. Accuracy decreases with distance from radar and in areas with beam blockage or bright-band contamination."
         }
     }

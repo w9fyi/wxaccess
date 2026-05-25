@@ -46,7 +46,6 @@ struct ColorScaleLegendView: View {
         case .echoTops:                 return "EET kft"
         case .vil:                      return "VIL kg/m²"
         case .stormTotalPrecip:         return "STP in"
-        case .oneHourPrecip:            return "OHP in"
         }
     }
 
@@ -60,8 +59,7 @@ struct ColorScaleLegendView: View {
         case .differentialPhase:        return phiEntries
         case .echoTops:                 return etEntries
         case .vil:                      return vilEntries
-        case .stormTotalPrecip,
-             .oneHourPrecip:            return precipEntries
+        case .stormTotalPrecip:         return precipEntries
         }
     }
 

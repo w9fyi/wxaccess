@@ -493,6 +493,8 @@ final class AppState: NSObject {
             if let (maxVal, maxBearing, maxRangeKm) = level3MaxEcho(sweep: l3) {
                 let cp = compassPoint(maxBearing)
                 parts.append("Maximum \(String(format: "%.1f", maxVal)) \(l3.productCode.physicalUnit) at \(cp) \(Int(maxRangeKm.rounded())) km")
+            } else {
+                parts.append("No significant echoes")
             }
         } else {
             return
@@ -777,7 +779,6 @@ enum RadarProduct: String, CaseIterable, Identifiable {
     case echoTops                 = "EET"
     case vil                      = "DVL"
     case stormTotalPrecip         = "STP"
-    case oneHourPrecip            = "OHP"
 
     var id: String { rawValue }
 
@@ -792,13 +793,12 @@ enum RadarProduct: String, CaseIterable, Identifiable {
         case .echoTops:                 "Echo Tops"
         case .vil:                      "Digital VIL"
         case .stormTotalPrecip:         "Storm Total Precip"
-        case .oneHourPrecip:            "1-Hour Precip"
         }
     }
 
     var isLevel3: Bool {
         switch self {
-        case .echoTops, .vil, .stormTotalPrecip, .oneHourPrecip: return true
+        case .echoTops, .vil, .stormTotalPrecip: return true
         default: return false
         }
     }
@@ -808,21 +808,10 @@ enum RadarProduct: String, CaseIterable, Identifiable {
         case .echoTops:         return .echoTops
         case .vil:              return .digitalVIL
         case .stormTotalPrecip: return .stormTotalPrecip
-        case .oneHourPrecip:    return .oneHourPrecip
         default:                return nil
         }
     }
 
-    // DS code for NWS TGFTP. nil = product not on TGFTP; Level3Fetcher falls back to THREDDS.
-    var tgftpDataStream: String? {
-        switch self {
-        case .echoTops:         return "135et"
-        case .vil:              return nil      // DS.134dv → 403; use THREDDS
-        case .stormTotalPrecip: return "80stp"
-        case .oneHourPrecip:    return nil      // DS.65ohp → 403; use THREDDS
-        default:                return nil      // Level 2 products don't use Level3Fetcher
-        }
-    }
 }
 
 // MARK: - Probe result

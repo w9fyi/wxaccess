@@ -2,6 +2,10 @@ import Foundation
 import CoreLocation
 import OSLog
 
+// Fetches active NWS Mesoscale Discussions via the NWS alerts API.
+// The SPC-specific ActiveMD.geojson endpoint returned 404 as of 2026-05.
+// NWS API endpoint: https://api.weather.gov/alerts/active?event=Mesoscale+Discussion
+
 final class SPCMesoscaleDiscussionFetcher: @unchecked Sendable {
     static let shared = SPCMesoscaleDiscussionFetcher()
 
@@ -13,20 +17,22 @@ final class SPCMesoscaleDiscussionFetcher: @unchecked Sendable {
     }()
 
     func fetchDiscussions() async -> [SPCMesoscaleDiscussion] {
-        guard let url = URL(string: "https://www.spc.noaa.gov/products/md/ActiveMD.geojson") else {
-            logger.error("Invalid SPC mesoscale discussion URL")
+        guard let url = URL(string: "https://api.weather.gov/alerts/active?event=Mesoscale+Discussion") else {
+            logger.error("Invalid NWS mesoscale discussion URL")
             return []
         }
         do {
-            let (data, _) = try await session.data(from: url)
+            var req = URLRequest(url: url)
+            req.setValue("wxaccess/1.1 (net.ai5os.wxaccess; w9fyi@me.com)", forHTTPHeaderField: "User-Agent")
+            let (data, _) = try await session.data(for: req)
             return try parse(data: data)
         } catch {
-            logger.error("SPC mesoscale discussions fetch failed: \(error)")
+            logger.error("NWS mesoscale discussions fetch failed: \(error)")
             return []
         }
     }
 
-    // MARK: - Decoding
+    // MARK: - Decoding (NWS alerts API format)
 
     private struct Root: Decodable { let features: [Feature] }
 
@@ -41,40 +47,63 @@ final class SPCMesoscaleDiscussionFetcher: @unchecked Sendable {
     }
 
     private struct Properties: Decodable {
-        let mdnumber: Int?
-        let issued: String?
-        let expired: String?
-        let concerning: String?
-        let affected: String?
+        let id: String?
+        let areaDesc: String?
+        let effective: String?
+        let expires: String?
+        let headline: String?
+        let description: String?
     }
 
-    // MD timestamps come in two flavours: full ISO-8601 and "YYYY-MM-DDThh:mmZ"
-    nonisolated(unsafe) private static let iso8601Full: ISO8601DateFormatter = {
+    nonisolated(unsafe) private static let iso8601: ISO8601DateFormatter = {
+        let f = ISO8601DateFormatter()
+        f.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        return f
+    }()
+
+    nonisolated(unsafe) private static let iso8601NoFrac: ISO8601DateFormatter = {
         let f = ISO8601DateFormatter()
         f.formatOptions = [.withInternetDateTime]
         return f
     }()
 
-    nonisolated(unsafe) private static let iso8601Short: DateFormatter = {
-        let f = DateFormatter()
-        f.dateFormat = "yyyy-MM-dd'T'HH:mmz"
-        f.locale = Locale(identifier: "en_US_POSIX")
-        f.timeZone = TimeZone(identifier: "UTC")
-        return f
-    }()
-
     private func parseDate(_ s: String?) -> Date? {
         guard let s else { return nil }
-        return Self.iso8601Full.date(from: s) ?? Self.iso8601Short.date(from: s)
+        return Self.iso8601.date(from: s) ?? Self.iso8601NoFrac.date(from: s)
+    }
+
+    // Extract MD number from headline e.g. "Mesoscale Discussion 456 issued..."
+    private func mdNumber(from headline: String?) -> Int? {
+        guard let headline else { return nil }
+        if let match = headline.range(of: #"Mesoscale Discussion (\d+)"#,
+                                      options: .regularExpression) {
+            let sub = headline[match]
+            let digits = sub.filter(\.isNumber)
+            return Int(digits)
+        }
+        return nil
+    }
+
+    // Extract "CONCERNING...XXX" line from NWS description text.
+    private func concerning(from description: String?) -> String {
+        guard let desc = description else { return "" }
+        for line in desc.components(separatedBy: "\n") {
+            let t = line.trimmingCharacters(in: .whitespaces)
+            if t.hasPrefix("CONCERNING...") {
+                return String(t.dropFirst("CONCERNING...".count))
+                    .trimmingCharacters(in: .whitespaces)
+            }
+        }
+        return ""
     }
 
     private func parse(data: Data) throws -> [SPCMesoscaleDiscussion] {
         let root = try JSONDecoder().decode(Root.self, from: data)
         return root.features.compactMap { feature in
             let p = feature.properties
-            guard let number  = p.mdnumber,
-                  let issued  = parseDate(p.issued),
-                  let expires = parseDate(p.expired) else { return nil }
+            guard let number  = mdNumber(from: p.headline),
+                  let issued  = parseDate(p.effective),
+                  let expires = parseDate(p.expires) else { return nil }
 
             var polygon: [CLLocationCoordinate2D] = []
             if let geom = feature.geometry,
@@ -92,8 +121,8 @@ final class SPCMesoscaleDiscussionFetcher: @unchecked Sendable {
                 number: number,
                 issued: issued,
                 expires: expires,
-                concerning: p.concerning ?? "",
-                affected:   p.affected   ?? "",
+                concerning: concerning(from: p.description),
+                affected:   p.areaDesc ?? "",
                 polygon:    polygon
             )
         }

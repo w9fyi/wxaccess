@@ -73,61 +73,69 @@ final class Level3Fetcher: @unchecked Sendable {
                                     scanTime: scanTime, fileName: "sn.last")]
         }
 
-        // Multi-scan path: parse directory listing, sort descending (highest = newest),
-        // HEAD each concurrently to get Last-Modified timestamps.
+        // Multi-scan path: parse (seqNum, timestamp) pairs from the directory HTML, sort
+        // by timestamp (TGFTP uses a circular buffer — sequence number order is NOT reliable
+        // after a wrap, so timestamp sort is the only correct approach).
+        // Timestamps are embedded in the HTML so no per-file HEAD requests are needed.
         let dirURL = URL(string: "\(tgftpBase)/DS.\(ds)/SI.\(site4)/")!
         let (htmlData, _) = try await session.data(from: dirURL)
         let html    = String(data: htmlData, encoding: .utf8) ?? ""
-        let seqNums = parseSequenceNumbers(from: html)
-            .sorted(by: >)
+        let dirEntries = parseDirectoryEntries(from: html)
+            .sorted { $0.scanTime > $1.scanTime }   // newest first
             .prefix(limit)
 
-        guard !seqNums.isEmpty else { throw URLError(.fileDoesNotExist) }
+        guard !dirEntries.isEmpty else { throw URLError(.fileDoesNotExist) }
 
-        var entries: [Level3ScanEntry] = []
-        await withTaskGroup(of: Level3ScanEntry?.self) { group in
-            for seq in seqNums {
-                group.addTask { [self] in
-                    let seqStr = String(format: "%04d", seq)
-                    let urlStr = "\(self.tgftpBase)/DS.\(ds)/SI.\(site4)/sn.\(seqStr)"
-                    guard let url = URL(string: urlStr) else { return nil }
-                    var req = URLRequest(url: url)
-                    req.httpMethod = "HEAD"
-                    let scanTime: Date
-                    if let resp = try? await self.session.data(for: req).1 as? HTTPURLResponse,
-                       let modStr = resp.value(forHTTPHeaderField: "Last-Modified"),
-                       let date   = self.parseHTTPDate(modStr) {
-                        scanTime = date
-                    } else {
-                        scanTime = .distantPast
-                    }
-                    return Level3ScanEntry(id: urlStr, site: site, product: product,
-                                          scanTime: scanTime, fileName: "sn.\(seqStr)")
-                }
-            }
-            for await entry in group { if let e = entry { entries.append(e) } }
+        return dirEntries.map { e in
+            let seqStr = String(format: "%04d", e.seqNum)
+            let urlStr = "\(tgftpBase)/DS.\(ds)/SI.\(site4)/sn.\(seqStr)"
+            return Level3ScanEntry(id: urlStr, site: site, product: product,
+                                   scanTime: e.scanTime, fileName: "sn.\(seqStr)")
         }
-
-        return entries.sorted { $0.scanTime > $1.scanTime }
     }
 
-    // Extracts integer sequence numbers from TGFTP directory HTML.
-    // Parses href="sn.NNNN" where NNNN is all digits (ignores "sn.last").
-    private func parseSequenceNumbers(from html: String) -> [Int] {
-        var numbers: Set<Int> = []
+    // Parses Apache-style directory listing HTML into (seqNum, scanTime) pairs.
+    // Each row looks like:
+    //   <a href="sn.0042">sn.0042</a></td><td align="right">25-May-2026 01:08  </td>
+    // Timestamps are UTC. "sn.last" rows are excluded (digits-only filter).
+    private struct DirEntry { let seqNum: Int; let scanTime: Date }
+
+    private func parseDirectoryEntries(from html: String) -> [DirEntry] {
+        var entries: [DirEntry] = []
         var search = html[...]
-        let prefix = #"href="sn."#
-        while let range = search.range(of: prefix, options: .literal) {
-            let afterPrefix = search[range.upperBound...]
-            if let endQuote = afterPrefix.firstIndex(of: "\"") {
-                let candidate = String(afterPrefix[afterPrefix.startIndex..<endQuote])
-                if candidate.allSatisfy(\.isNumber), let n = Int(candidate) {
-                    numbers.insert(n)
-                }
-                search = afterPrefix[endQuote...]
-            } else { break }
+        let hrefPrefix = #"href="sn."#
+        let dateParser = makeDirDateFormatter()
+
+        while let hrefRange = search.range(of: hrefPrefix, options: .literal) {
+            let afterHref = search[hrefRange.upperBound...]
+            guard let endQuote = afterHref.firstIndex(of: "\"") else { break }
+
+            let seqStr    = String(afterHref[afterHref.startIndex..<endQuote])
+            search        = afterHref[endQuote...]
+
+            guard seqStr.allSatisfy(\.isNumber), let seqNum = Int(seqStr) else { continue }
+
+            // After the href, find the next table cell with the timestamp.
+            // Format: </td><td align="right">24-May-2026 22:39  </td>
+            guard let tdRange = search.range(of: #"align="right">"#, options: .literal) else { break }
+            let afterTd = search[tdRange.upperBound...]
+            guard let endTd = afterTd.range(of: "</td>") else { break }
+            let dateStr = String(afterTd[afterTd.startIndex..<endTd.lowerBound]).trimmingCharacters(in: .whitespaces)
+            search = afterTd[endTd.upperBound...]
+
+            if let date = dateParser.date(from: dateStr) {
+                entries.append(DirEntry(seqNum: seqNum, scanTime: date))
+            }
         }
-        return Array(numbers)
+        return entries
+    }
+
+    private func makeDirDateFormatter() -> DateFormatter {
+        let fmt = DateFormatter()
+        fmt.locale     = Locale(identifier: "en_US_POSIX")
+        fmt.timeZone   = TimeZone(identifier: "UTC")
+        fmt.dateFormat = "dd-MMM-yyyy HH:mm"
+        return fmt
     }
 
     private func parseHTTPDate(_ str: String) -> Date? {
