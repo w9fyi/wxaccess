@@ -38,6 +38,18 @@ enum Level3ProductCode: Int, CaseIterable, Identifiable, Sendable {
         }
     }
 
+    // NWS TGFTP DS data-stream code. nil = product not accessible on TGFTP; use THREDDS.
+    var tgftpDataStream: String? {
+        switch self {
+        case .baseReflectivity:  return "p94r0"
+        case .baseVelocity:      return "p99v0"
+        case .echoTops:          return "135et"
+        case .digitalVIL:        return nil       // DS.134dv → 403 on TGFTP
+        case .stormTotalPrecip:  return "80stp"
+        case .oneHourPrecip:     return nil       // DS.65ohp → 403 on TGFTP
+        }
+    }
+
     var physicalUnit: String {
         switch self {
         case .baseReflectivity:  "dBZ"

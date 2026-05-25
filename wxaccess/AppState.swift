@@ -812,6 +812,17 @@ enum RadarProduct: String, CaseIterable, Identifiable {
         default:                return nil
         }
     }
+
+    // DS code for NWS TGFTP. nil = product not on TGFTP; Level3Fetcher falls back to THREDDS.
+    var tgftpDataStream: String? {
+        switch self {
+        case .echoTops:         return "135et"
+        case .vil:              return nil      // DS.134dv → 403; use THREDDS
+        case .stormTotalPrecip: return "80stp"
+        case .oneHourPrecip:    return nil      // DS.65ohp → 403; use THREDDS
+        default:                return nil      // Level 2 products don't use Level3Fetcher
+        }
+    }
 }
 
 // MARK: - Probe result
