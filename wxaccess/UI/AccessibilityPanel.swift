@@ -212,12 +212,21 @@ struct AccessibilityPanel: View {
                 .accessibilityValue("\(Int(appState.probeRangeKm.rounded())) kilometers")
                 .accessibilityHint("Distance from radar site for the probe point")
             }
-            Button { appState.probeAllSites() } label: {
-                Label("Probe All Sites", systemImage: "scope").font(.caption)
+            HStack(spacing: 8) {
+                Button { appState.jumpToMaxEcho() } label: {
+                    Label("Jump to Max Echo", systemImage: "arrow.up.to.line").font(.caption)
+                }
+                .disabled(!hasData)
+                .accessibilityLabel("Jump to strongest echo and probe all sites")
+                .accessibilityHint("Automatically finds the strongest radar return, sets bearing and range, then probes all selected sites at once.")
+
+                Button { appState.probeAllSites() } label: {
+                    Label("Probe All Sites", systemImage: "scope").font(.caption)
+                }
+                .disabled(!hasData)
+                .accessibilityLabel("Probe all \(siteCount) site\(siteCount == 1 ? "" : "s") at \(Int(appState.probeBearing.rounded()))° bearing, \(Int(appState.probeRangeKm.rounded())) km")
+                .accessibilityHint("Reads the radar value at this bearing and distance from every selected site. Results are announced.")
             }
-            .disabled(!hasData)
-            .accessibilityLabel("Probe all \(siteCount) site\(siteCount == 1 ? "" : "s") at \(Int(appState.probeBearing.rounded()))° bearing, \(Int(appState.probeRangeKm.rounded())) km")
-            .accessibilityHint("Reads the radar value at this bearing and distance from every selected site. Results are announced.")
         }
         .accessibilityElement(children: .contain)
         .accessibilityLabel("Multi-site probe")

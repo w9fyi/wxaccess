@@ -547,6 +547,29 @@ final class AppState: NSObject {
         probe(at: target)
     }
 
+    func jumpToMaxEcho() {
+        if let sweep = currentSweeps.first,
+           let (_, bearing, rangeKm) = sweepMaxEcho(sweep: sweep) {
+            probeBearing = (bearing / 5).rounded() * 5
+            probeRangeKm = max(5, (rangeKm / 10).rounded() * 10)
+            probeAllSites()
+            return
+        }
+        if let l3 = level3Sweep,
+           let (_, bearing, rangeKm) = level3MaxEcho(sweep: l3) {
+            probeBearing = (bearing / 5).rounded() * 5
+            probeRangeKm = max(5, (rangeKm / 10).rounded() * 10)
+            let target = destinationCoordinate(from: l3.site.coordinate,
+                                               bearing: probeBearing, rangeKm: probeRangeKm)
+            probe(at: target)
+            return
+        }
+        let desc = "No significant echoes detected."
+        probeResult = ProbeResult(coordinate: selectedSite.coordinate,
+                                  bearing: probeBearing, rangeKm: probeRangeKm, description: desc)
+        announceProbe(desc)
+    }
+
     private func destinationCoordinate(from site: CLLocationCoordinate2D,
                                         bearing: Double, rangeKm: Double) -> CLLocationCoordinate2D {
         let R  = 6371.0
