@@ -16,7 +16,7 @@ struct AccessibilityPanel: View {
                 if appState.isAnimating || appState.hasAnimationFrames {
                     Divider(); animationSection
                 }
-                Divider(); sonificationSection
+                Divider(); multiProbeSection
                 Divider(); alertsSection
                 Divider(); outlooksSection
                 if appState.showMesoscaleDiscussions {
@@ -186,21 +186,22 @@ struct AccessibilityPanel: View {
         .accessibilityLabel("Animation playback controls")
     }
 
-    // MARK: - Sonification & point probe
+    // MARK: - Multi-site probe
 
-    private var sonificationSection: some View {
+    private var multiProbeSection: some View {
         @Bindable var state = appState
-        let hasData = appState.currentSweep != nil || appState.level3Sweep != nil || !appState.animationFrames.isEmpty
+        let hasData = !appState.currentSweeps.isEmpty || appState.level3Sweep != nil || !appState.animationFrames.isEmpty
+        let siteCount = max(appState.currentSweeps.count, 1)
         return VStack(alignment: .leading, spacing: 6) {
-            Label("Radar Sonification & Point Probe", systemImage: "waveform")
+            Label("Multi-Site Probe", systemImage: "scope")
                 .font(.caption.weight(.semibold)).foregroundStyle(.secondary)
             HStack {
                 Text("Bearing:").font(.caption).foregroundStyle(.secondary).frame(width: 60, alignment: .leading)
-                Stepper(value: $state.sonificationBearing, in: 0...359, step: 5) {
-                    Text(String(format: "%.0f°", appState.sonificationBearing)).font(.caption.monospacedDigit())
+                Stepper(value: $state.probeBearing, in: 0...359, step: 5) {
+                    Text(String(format: "%.0f°", appState.probeBearing)).font(.caption.monospacedDigit())
                 }
                 .accessibilityLabel("Bearing")
-                .accessibilityValue(String(format: "%.0f degrees", appState.sonificationBearing))
+                .accessibilityValue(String(format: "%.0f degrees", appState.probeBearing))
             }
             HStack {
                 Text("Range:").font(.caption).foregroundStyle(.secondary).frame(width: 60, alignment: .leading)
@@ -209,32 +210,17 @@ struct AccessibilityPanel: View {
                 }
                 .accessibilityLabel("Range")
                 .accessibilityValue("\(Int(appState.probeRangeKm.rounded())) kilometers")
-                .accessibilityHint("Distance from radar for the point probe")
+                .accessibilityHint("Distance from radar site for the probe point")
             }
-            HStack(spacing: 8) {
-                Button { appState.sonify() } label: {
-                    Label("Sonify Bearing", systemImage: "speaker.wave.2").font(.caption)
-                }
-                .disabled(!hasData)
-                .accessibilityLabel("Sonify bearing \(Int(appState.sonificationBearing.rounded())) degrees")
-                .accessibilityHint("Plays radar gate values along this bearing as audio tones. Higher pitch means stronger echo.")
-
-                Button { appState.probeAtBearingRange() } label: {
-                    Label("Probe Point", systemImage: "scope").font(.caption)
-                }
-                .disabled(!hasData)
-                .accessibilityLabel("Probe point at \(Int(appState.sonificationBearing.rounded()))° bearing, \(Int(appState.probeRangeKm.rounded())) km range")
-                .accessibilityHint("Reads the radar value at this bearing and distance. Result is announced and shown below.")
+            Button { appState.probeAllSites() } label: {
+                Label("Probe All Sites", systemImage: "scope").font(.caption)
             }
-            if !appState.sonificationResult.isEmpty {
-                Text(appState.sonificationResult)
-                    .font(.caption2).foregroundStyle(.secondary)
-                    .accessibilityAddTraits(.updatesFrequently)
-                    .accessibilityLabel("Sonification result: \(appState.sonificationResult)")
-            }
+            .disabled(!hasData)
+            .accessibilityLabel("Probe all \(siteCount) site\(siteCount == 1 ? "" : "s") at \(Int(appState.probeBearing.rounded()))° bearing, \(Int(appState.probeRangeKm.rounded())) km")
+            .accessibilityHint("Reads the radar value at this bearing and distance from every selected site. Results are announced.")
         }
         .accessibilityElement(children: .contain)
-        .accessibilityLabel("Radar sonification and point probe")
+        .accessibilityLabel("Multi-site probe")
     }
 
     // MARK: - Alerts

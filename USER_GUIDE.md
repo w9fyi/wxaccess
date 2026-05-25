@@ -32,7 +32,7 @@ This guide walks you from installation through every feature, with plain-English
 18. [Satellite Imagery](#satellite-imagery)
 19. [Model and Analysis Layers](#model-and-analysis-layers)
 20. [Custom Placefiles](#custom-placefiles)
-21. [Sonification](#sonification)
+21. [Multi-Site Probe](#multi-site-probe)
 22. [Accessibility Panel Reference](#accessibility-panel-reference)
 23. [Settings and Preferences](#settings-and-preferences)
 24. [Keyboard Shortcuts](#keyboard-shortcuts)
@@ -678,41 +678,35 @@ In Settings → Placefiles, each entry has a Remove button. Click it to immediat
 
 ---
 
-## Sonification
+## Multi-Site Probe
 
-Sonification converts radar values into audio tones, allowing the radar data along a specific bearing to be heard rather than seen. This feature is designed for blind and low-vision users, but is useful for anyone who wants to understand radar without reading numbers.
+Multi-Site Probe lets you query a specific geographic point and hear the radar value at that location from every selected radar site simultaneously. When you have two or three sites loaded — for example KEWX, KFWS, and KHGX — a single probe action reports each site's reading at the same point. This makes it straightforward to compare coverage and detect echoes that may be below one site's beam but visible from another.
 
-### How sonification works
+### Using the probe controls
 
-The app samples the radar data along a line extending from the radar site at a chosen bearing angle. Each range bin (roughly 5 km of distance) produces one tone. The tone's **frequency** encodes the radar value at that distance:
+The **Multi-Site Probe** section of the Data Summary panel has two steppers and a button:
 
-| Product | Low value (low pitch) | High value (high pitch) |
-|---|---|---|
-| Reflectivity (REF) | 0 dBZ → 200 Hz | 75 dBZ → 1600 Hz |
-| Velocity (VEL) | −30 m/s → 220 Hz | +30 m/s → 1100 Hz |
-| Diff. Reflectivity (ZDR) | −2 dB → 300 Hz | +5 dB → 900 Hz |
-| Corr. Coefficient (RHO) | 0.70 → 200 Hz | 1.00 → 1200 Hz |
+- **Bearing** — adjusts the probe direction from 0° (north) to 359°, in 5° steps. The bearing is measured from the primary (first) selected site.
+- **Range** — sets the distance from the primary site to the probe point (5–460 km, in 10 km steps).
+- **Probe All Sites** — fires the probe. VoiceOver immediately announces each selected site's reading at that coordinate.
 
-Each tone lasts 30 milliseconds with a smooth onset and release so consecutive tones do not click. The sequence covers the radar's range (up to 230 km) in about 1.4 seconds.
+**Example announcement with three sites selected:**
+*"KEWX: 52.0 dBZ. KFWS: 44.3 dBZ. KHGX: no echo. NE 148 km from KEWX."*
 
-### Using the sonification and probe controls
+If a site's beam does not cover that location (the point is outside the radar's maximum range, or closer than the first gate), the result says "outside coverage" for that site.
 
-The **Bearing** stepper in the Data Summary panel adjusts the bearing angle from 0° (north) to 359° in 5° steps. The **Range** stepper sets the distance from the radar (5–460 km, in 10 km steps).
+You can also probe by clicking anywhere on the map — the click result is announced and includes readings from all selected sites.
 
-Two buttons act on the current bearing and range:
+### Practical use with multiple sites
 
-- **Sonify Bearing** — plays radar gate values along the full bearing line as audio tones, starting from the radar and sweeping outward to the edge of coverage. The panel also shows text listing the top echoes by intensity.
-- **Probe Point** — reads the radar value at exactly the bearing and range you set. The result is announced by VoiceOver and shown in the Gate Probe row below.
+With three Gulf Coast sites loaded and a storm over the Houston metro area:
 
-Alongside the audio, the Data Summary panel shows text output listing the **top three echoes** by intensity — their strength and range — so the spoken result can be combined with the tones.
+1. Set bearing to roughly 30° from KEWX (northeast toward Houston).
+2. Step range up from 50 km until a non-zero dBZ value appears in the announcement.
+3. Note which sites show a value and which report "no echo" — beam height differences reveal storm-top structure.
+4. Step the bearing 5° at a time to scan around the storm.
 
-**Example output:** *"Strong echo: 52 dBZ at 85 km. Moderate: 38 dBZ at 140 km."*
-
-### Interpreting the sounds
-
-For Reflectivity, silence or low tones at the start of the sequence (the radar's near range) suggest clear skies nearby. A rising pitch at a certain point indicates precipitation beginning at that distance. A sequence of high-pitched tones sustained for several bins indicates a deep, intense storm cell. A brief high pitch followed by silence could be a thin line or a single storm cell.
-
-> **Try it now:** Open the Data Summary panel and find the Sonification section. Set the bearing to 90° (due east). If there is precipitation east of the radar, you will hear rising pitches at the ranges where precipitation occurs. Rotate the bearing by 5° increments to scan around the compass, listening for where storms are strongest and closest.
+> **Try it now:** Select KEWX and KFWS in the Site Selector. Load the REF product. Open the Data Summary panel and find the Multi-Site Probe section. Set bearing to 45° and range to 150 km. Press Probe All Sites and listen for each site's value.
 
 ---
 
@@ -725,7 +719,7 @@ The Data Summary panel at the bottom of the window presents all data in plain te
 | **Radar** | Site, product, tilt, scan time (UTC), VCP, gate count and spacing |
 | **Gate Probe** | Last clicked value, bearing, and range |
 | **Animation** | Current frame number and scan time |
-| **Sonification** | Bearing, top echo descriptions |
+| **Multi-Site Probe** | Bearing, range, per-site readings |
 | **Alerts** | Count of active alerts; each alert's event name and expiration |
 | **SPC Outlooks** | Highest risk category for Day 1, Day 2, Day 3 |
 | **Mesoscale Discussions** | Count and text summary of each active MD |

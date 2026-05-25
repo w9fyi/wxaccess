@@ -12,7 +12,6 @@
 		12C4BEB72CBD11B72565C2E7 /* Level2DecoderTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0F9B6B85C7A2F50571A67880 /* Level2DecoderTests.swift */; };
 		17C19C4C0997528E99E12589 /* AppState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2CC1CA6F0B43296B14E7C34F /* AppState.swift */; };
 		1ACF2D2C52FA520103B5BA5D /* Level2Decoder.swift in Sources */ = {isa = PBXBuildFile; fileRef = F974F381DBB3BC3FD76969D7 /* Level2Decoder.swift */; };
-		22DCACFDD9898965C20AE339 /* SonificationEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1432C2C1AF737BCA004E69F /* SonificationEngine.swift */; };
 		2642FF801304086AA56354DB /* MapKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 455EC768D1EAF8C52624C5EE /* MapKit.framework */; };
 		27B8FAFB3905C9CA6D8B5DE7 /* BZip2Decompressor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3452F6FFE4CBD19F939C9D72 /* BZip2Decompressor.swift */; };
 		2B8212CC8622C159F04E6A3F /* wxaccessApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 60BF9207AD39DC5C38BFBA20 /* wxaccessApp.swift */; };
@@ -128,7 +127,6 @@
 		C6EBAB21A51A54ED86D7CDE4 /* GOESSatellite.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GOESSatellite.swift; sourceTree = "<group>"; };
 		DDE178F6468448D77C9C94EF /* StormCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StormCell.swift; sourceTree = "<group>"; };
 		DF6CD7BFC88BD0959AD663C3 /* AlertsListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AlertsListView.swift; sourceTree = "<group>"; };
-		E1432C2C1AF737BCA004E69F /* SonificationEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SonificationEngine.swift; sourceTree = "<group>"; };
 		EA731DF4FD29FDAB2E1CADBE /* SPCOutlook.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SPCOutlook.swift; sourceTree = "<group>"; };
 		F32ED9BBB435BCD8D089F59E /* Level3Decoder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Level3Decoder.swift; sourceTree = "<group>"; };
 		F4B2427136256697F4C94293 /* NEXRADSite.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NEXRADSite.swift; sourceTree = "<group>"; };
@@ -190,14 +188,6 @@
 			path = Model;
 			sourceTree = "<group>";
 		};
-		353C99E0C57E059797B84152 /* Audio */ = {
-			isa = PBXGroup;
-			children = (
-				E1432C2C1AF737BCA004E69F /* SonificationEngine.swift */,
-			);
-			path = Audio;
-			sourceTree = "<group>";
-		};
 		4E8B125EDB5DA746CC56531C /* GOES */ = {
 			isa = PBXGroup;
 			children = (
@@ -227,7 +217,6 @@
 				3573837C3F2C2814E5D996A6 /* SettingsView.swift */,
 				7975246609DBC8DAA77EDF86 /* wxaccess.entitlements */,
 				60BF9207AD39DC5C38BFBA20 /* wxaccessApp.swift */,
-				353C99E0C57E059797B84152 /* Audio */,
 				BCC403679FD0750FCB3B6C28 /* Bug */,
 				4E8B125EDB5DA746CC56531C /* GOES */,
 				6F3C277A64DF6D137B6A4372 /* Map */,
@@ -484,7 +473,6 @@
 				4FD8A318477CADB11CD71213 /* SPCStormReportFetcher.swift in Sources */,
 				474A2A14F2F5BEFB7D6C16D8 /* SettingsView.swift in Sources */,
 				BCD07AEE103081564D631B2A /* SiteSelectorView.swift in Sources */,
-				22DCACFDD9898965C20AE339 /* SonificationEngine.swift in Sources */,
 				EC04641C832281ED99649D15 /* StormCell.swift in Sources */,
 				DF1FDEAD8E36379A7F7459C1 /* SurfaceObs.swift in Sources */,
 				C2F050FDC6A03CE070C8FFFD /* SurfaceObsFetcher.swift in Sources */,

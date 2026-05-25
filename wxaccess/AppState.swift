@@ -76,11 +76,8 @@ final class AppState: NSObject {
     var level3Sweep: Level3RadialSweep?
     var isLoadingLevel3: Bool = false
 
-    // MARK: - Sonification
-    var sonificationBearing: Double = 0
-    var sonificationResult: String = ""
-
     // MARK: - Bearing+range probe (accessible keyboard alternative to map tap)
+    var probeBearing: Double = 0
     var probeRangeKm: Double = 50.0
     var probeResult: ProbeResult? = nil
 
@@ -392,76 +389,59 @@ final class AppState: NSObject {
         isLoadingAnimation = false
     }
 
-    // MARK: - Sonification
-
-    func sonify() {
-        guard let sweep = currentSweep ?? animationFrames.last else {
-            sonificationResult = "No radar data to sonify."
-            return
-        }
-        sonificationResult = SonificationEngine.shared.sonify(sweep: sweep, bearing: sonificationBearing)
-    }
-
     // MARK: - Gate probe
 
     func probe(at coordinate: CLLocationCoordinate2D) {
-        let siteCoord: CLLocationCoordinate2D
-        if let sweep = currentSweep {
-            siteCoord = sweep.site.coordinate
-        } else if let l3 = level3Sweep {
-            siteCoord = l3.site.coordinate
-        } else {
-            probeResult = ProbeResult(coordinate: coordinate, bearing: 0, rangeKm: 0,
-                                      description: "No radar data loaded.")
-            return
-        }
-
-        let (bearing, rangeKm) = bearingAndRangeKm(from: siteCoord, to: coordinate)
-        let cp = compassPoint(bearing)
-
-        if let sweep = currentSweep, !sweep.radials.isEmpty {
-            let rangeM = rangeKm * 1000
-            guard let radial = sweep.radials.min(by: {
-                angularDiff($0.azimuth, bearing) < angularDiff($1.azimuth, bearing)
-            }) else { return }
-
-            let gateIdx = Int(round((rangeM - Double(radial.firstGateMeters)) / Double(radial.gateSizeMeters)))
-            let loc = "\(cp) \(String(format: "%.0f", rangeKm)) km from \(sweep.site.icao)"
-
-            if gateIdx < 0 || gateIdx >= radial.numGates {
-                let desc = "Outside radar coverage — \(loc)"
-                probeResult = ProbeResult(coordinate: coordinate, bearing: bearing, rangeKm: rangeKm, description: desc)
-                announceProbe(desc)
-                return
-            }
-            let phys   = radial.physicalValue(gateIndex: gateIdx)
-            let valStr = phys.map { String(format: "%.1f \(momentUnit(sweep.momentType))", $0) } ?? "No echo"
-            let desc   = "\(momentLabel(sweep.momentType)): \(valStr), \(loc)"
-            probeResult = ProbeResult(coordinate: coordinate, bearing: bearing, rangeKm: rangeKm, description: desc)
-            announceProbe(desc)
-            return
-        }
-
-        if let l3 = level3Sweep, !l3.radials.isEmpty {
+        // Level 3 single-site probe
+        if currentSweeps.isEmpty, let l3 = level3Sweep, !l3.radials.isEmpty {
+            let (bearing, rangeKm) = bearingAndRangeKm(from: l3.site.coordinate, to: coordinate)
+            let cp = compassPoint(bearing)
             guard let radial = l3.radials.min(by: {
                 angularDiff($0.startAngle, bearing) < angularDiff($1.startAngle, bearing)
             }) else { return }
-
             let binIdx = Int((rangeKm - l3.firstBinKm) / l3.binSizeKm)
             let loc    = "\(cp) \(String(format: "%.0f", rangeKm)) km from \(l3.site.icao)"
-
             if binIdx < 0 || binIdx >= radial.data.count {
                 let desc = "Outside radar coverage — \(loc)"
                 probeResult = ProbeResult(coordinate: coordinate, bearing: bearing, rangeKm: rangeKm, description: desc)
-                announceProbe(desc)
-                return
+                announceProbe(desc); return
             }
             let phys   = l3.productCode.physicalValue(code: radial.data[binIdx])
             let valStr = phys.map { String(format: "%.1f \(l3.productCode.physicalUnit)", $0) } ?? "No echo"
             let desc   = "\(l3.productCode.displayName): \(valStr), \(loc)"
             probeResult = ProbeResult(coordinate: coordinate, bearing: bearing, rangeKm: rangeKm, description: desc)
-            announceProbe(desc)
+            announceProbe(desc); return
         }
+
+        // Level 2 multi-site probe
+        guard !currentSweeps.isEmpty else {
+            let desc = "No radar data loaded."
+            probeResult = ProbeResult(coordinate: coordinate, bearing: 0, rangeKm: 0, description: desc)
+            announceProbe(desc); return
+        }
+        let primaryCoord = currentSweeps[0].site.coordinate
+        let (bearing, rangeKm) = bearingAndRangeKm(from: primaryCoord, to: coordinate)
+        let cp = compassPoint(bearing)
+        let readings = currentSweeps.map { siteReading(sweep: $0, at: coordinate) }
+        let loc  = "\(cp) \(String(format: "%.0f", rangeKm)) km from \(currentSweeps[0].site.icao)"
+        let desc = readings.joined(separator: ". ") + ". " + loc
+        probeResult = ProbeResult(coordinate: coordinate, bearing: bearing, rangeKm: rangeKm, description: desc)
+        announceProbe(desc)
+    }
+
+    private func siteReading(sweep: RadarSweep, at coordinate: CLLocationCoordinate2D) -> String {
+        guard !sweep.radials.isEmpty else { return "\(sweep.site.icao): no data" }
+        let (bearing, rangeKm) = bearingAndRangeKm(from: sweep.site.coordinate, to: coordinate)
+        guard let radial = sweep.radials.min(by: {
+            angularDiff($0.azimuth, bearing) < angularDiff($1.azimuth, bearing)
+        }) else { return "\(sweep.site.icao): no data" }
+        let gateIdx = Int(round((rangeKm * 1000 - Double(radial.firstGateMeters)) / Double(radial.gateSizeMeters)))
+        if gateIdx < 0 || gateIdx >= radial.numGates {
+            return "\(sweep.site.icao): outside coverage"
+        }
+        let phys   = radial.physicalValue(gateIndex: gateIdx)
+        let valStr = phys.map { String(format: "%.1f \(momentUnit(sweep.momentType))", $0) } ?? "no echo"
+        return "\(sweep.site.icao): \(valStr)"
     }
 
     private func announceProbe(_ text: String) {
@@ -554,23 +534,16 @@ final class AppState: NSObject {
 
     // MARK: - Bearing+range probe
 
-    func probeAtBearingRange() {
-        let siteCoord: CLLocationCoordinate2D
-        if let sweep = currentSweep {
-            siteCoord = sweep.site.coordinate
-        } else if let l3 = level3Sweep {
-            siteCoord = l3.site.coordinate
-        } else {
+    func probeAllSites() {
+        guard !currentSweeps.isEmpty || level3Sweep != nil else {
             let desc = "No radar data loaded."
             probeResult = ProbeResult(coordinate: selectedSite.coordinate,
-                                      bearing: sonificationBearing, rangeKm: probeRangeKm,
+                                      bearing: probeBearing, rangeKm: probeRangeKm,
                                       description: desc)
-            announceProbe(desc)
-            return
+            announceProbe(desc); return
         }
-        let target = destinationCoordinate(from: siteCoord,
-                                           bearing: sonificationBearing,
-                                           rangeKm: probeRangeKm)
+        let primaryCoord = currentSweeps.first?.site.coordinate ?? level3Sweep!.site.coordinate
+        let target = destinationCoordinate(from: primaryCoord, bearing: probeBearing, rangeKm: probeRangeKm)
         probe(at: target)
     }
 
